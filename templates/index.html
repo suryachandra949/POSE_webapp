@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Runtime vs Energy</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+          /* ===============================
+           Base
+           =============================== */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+      
+        /* ===============================
+           Controls
+           =============================== */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            position: relative;   /* REQUIRED */
+            z-index: 10;          /* ABOVE Plotly */
+        }
+      
+        /* DO NOT TOUCH z-index ON SELECT */
+        select {
+            min-width: 260px;
+            padding: 4px 6px;
+            font-size: 14px;
+        }
+      
+        /* ===============================
+           Plotly — push DOWN instead
+           =============================== */
+        .js-plotly-plot {
+            position: relative;
+            z-index: 1;   /* ← THIS IS THE KEY */
+        }
+
+      
+        /* ===============================
+           Layout
+           =============================== */
+        #main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+      
+        .block {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            max-width: 1100px;
+        }
+      
+        .plot {
+            flex: 1;
+            height: 420px;
+            min-width: 0;
+        }
+      
+        /* ===============================
+           Results panel
+           =============================== */
+        .results {
+            width: 260px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            background: #fafafa;
+            font-size: 14px;
+        }
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-body {
+            position: relative;
+        }
+                /* ===============================
+           Metrics tables styling
+           =============================== */
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .metrics-table th,
+        .metrics-table td {
+            border: 1px solid #bbb;   /* ← grid lines */
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .metrics-table thead th {
+            background: #eee;
+            font-weight: bold;
+        }
+
+        .metrics-table tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        /* Optional: derived table emphasis */
+        .derived-table th {
+            background: #e8f0ff;
+        }
+
+
+    </style>
+
+</head>
+<body>
+
+<h2>Runtime vs Energy</h2>
+
+<!-- ADD POINT -->
+<div class="controls">
+    <label for="pointSelect">Add point:</label>
+    <select id="pointSelect">
+        <option value="">-- select --</option>
+        {% for i in range(points|length) %}
+            <option value="{{ i }}">{{ points[i].label }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<!-- COMPUTE -->
+<div class="controls">
+    <label for="computeSelect">Compute for:</label>
+    <select id="computeSelect">
+        <option value="">-- plotted points --</option>
+    </select>
+
+    <button id="computeBtn" type="button">Compute</button>
+</div>
+
+<div id="main">
+
+    <!-- ===== CASE 1 ===== -->
+    <div class="block">
+        <div id="plot1" class="plot"></div>
+
+        <div id="results1" class="results">
+            <h3>Case 1</h3>
+
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="points1">Point Metrics</button>
+                <button class="tab-btn" data-tab="derived1">Insights</button>
+            </div>
+            <div class="tab-body">
+                <div class="tab-content active" id="tab-points1">
+                  <div id="results-content1"></div>
+                </div>
+
+                <div class="tab-content" id="tab-derived1">
+                  <div id="derived-content1"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CASE 2 ===== -->
+    <div class="block">
+        <div id="plot2" class="plot"></div>
+
+        <div id="results2" class="results">
+            <h3>Case 2</h3>
+
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="points2">Point Metrics</button>
+                <button class="tab-btn" data-tab="derived2">Insights</button>
+            </div>
+            <div class="tab-body">
+            <div class="tab-content active" id="tab-points2">
+                <div id="results-content2"></div>
+            </div>
+
+            <div class="tab-content" id="tab-derived2">
+                <div id="derived-content2"></div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CASE 3 ===== -->
+    <div class="block">
+        <div id="plot3" class="plot"></div>
+
+        <div id="results3" class="results">
+            <h3>Case 3</h3>
+
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="points3">Point Metrics</button>
+                <button class="tab-btn" data-tab="derived3">Insights</button>
+            </div>
+            <div class="tab-body">
+            <div class="tab-content active" id="tab-points3">
+                <div id="results-content3"></div>
+            </div>
+
+            <div class="tab-content" id="tab-derived3">
+                <div id="derived-content3"></div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+
+<script>
+    // -------------------------------
+    // Data from Flask
+    // -------------------------------
+//    const allPoints = {{ points | safe }};
+//    const power = {{ power | safe }};
+
+    const allPoints = {{ points | safe }};
+    const powerSets = {{ power_sets | safe }};
+
+
+    const pointSelect = document.getElementById("pointSelect");
+    const computeSelect = document.getElementById("computeSelect");
+    const computeBtn = document.getElementById("computeBtn");
+
+    // -------------------------------
+    // State tracking
+    // -------------------------------
+    const addedLabels = new Set();
+    const intersectionKeys = new Set();
+    const plottedPoints = new Map(); // label -> point
+
+    const plotContexts = [
+      {
+        plotId: "plot1",
+        power: powerSets.case1,
+        pmin: Math.min(...Object.values(powerSets.case1)),
+        pmax: Math.max(...Object.values(powerSets.case1)),
+        resultsId: "results-content1",
+        derivedId: "derived-content1"
+      },
+      {
+        plotId: "plot2",
+        power: powerSets.case2,
+        pmin: Math.min(...Object.values(powerSets.case2)),
+        pmax: Math.max(...Object.values(powerSets.case2)),
+        resultsId: "results-content2",
+        derivedId: "derived-content2"
+      },
+      {
+        plotId: "plot3",
+        power: powerSets.case3,
+        pmin: Math.min(...Object.values(powerSets.case3)),
+        pmax: Math.max(...Object.values(powerSets.case3)),
+        resultsId: "results-content3",
+        derivedId: "derived-content3"
+      }
+    ];
+   
+    
+
+    // -------------------------------
+    // Initial plot (power lines)
+    // -------------------------------
+    plotContexts.forEach(ctx => {
+
+      const COLORS = ["green", "red"];
+
+      const powerTraces = Object.entries(ctx.power).map(
+        ([name, slope], i) => ({
+          x: [0,1],
+          y:[0, slope],
+          mode: "lines",
+          name: name,
+          line: {
+            color: COLORS[i] || "gray",
+            width: 2
+          },
+          meta: {
+            type: "power",
+            slope: slope,
+            name: name
+          }
+        })
+      );
+      Plotly.newPlot(
+        ctx.plotId, powerTraces,
+        {
+          xaxis: { title: "Runtime" },
+          yaxis: { title: "Energy" }
+        }
+      );
+    });
+   
+
+    // -------------------------------
+    // Helpers
+    // -------------------------------
+    function recomputeXMax(plotId) {
+        const gd = document.getElementById(plotId);
+        const xVals = gd.data.flatMap(t => t.x || []);
+        return Math.max(...xVals, 1);
+    }
+
+
+function updatePowerLines(plotId, xMax) {
+  const gd = document.getElementById(plotId);
+
+  gd.data.forEach((trace, i) => {
+    if (trace.meta?.type === "power") {
+      const slope = trace.meta.slope;
+
+      Plotly.restyle(
+        plotId,
+        {
+          x: [[0, xMax]],
+          y: [[0, slope * xMax]]
+        },
+        [i]
+      );
+    }
+  });
+}
+
+
+
+//    function removeIntersectionTraces() {
+//        const gd = document.getElementById("plot");
+//        const indices = [];
+//
+//        gd.data.forEach((trace, i) => {
+//            if (trace.meta && trace.meta.type === "intersection") {
+//                indices.push(i);
+//            }
+//        });
+//
+//        if (indices.length > 0) {
+//            Plotly.deleteTraces("plot", indices);
+//        }
+//
+//        intersectionKeys.clear();
+//    }
+//
+    function removeComputeTraces(plotId) {
+        const gd = document.getElementById(plotId);
+        const idx = [];
+    
+        gd.data.forEach((t, i) => {
+            if (t.meta && (
+                t.meta.type === "intersection" ||
+                t.meta.type === "edd" ||
+                t.meta.type === "edd_limit" ||
+                t.meta.type === "D_line" ||
+                t.meta.type === "C_line"
+            )) {
+                idx.push(i);
+            }
+        });
+      
+        if (idx.length) {
+            Plotly.deleteTraces(plotId, idx);
+        }
+    }
+
+
+    function labelPositionFromLine(line) {
+        if (line === "pmax") return "top center";
+        if (line === "pmin") return "bottom center";
+        return "top right"; // fallback
+    }
+
+   
+    function updateResultsPanel(containerId,metrics) {
+        const rows = metrics.point_metrics;
+    
+        const tbody = rows.map(row => `
+            <tr>
+                <td>${row.label}</td>
+                <td>${row.runtime.toFixed(3)}</td>
+                <td>${row.energy.toFixed(3)}</td>
+            </tr>
+        `).join("");
+          
+        document.getElementById(containerId).innerHTML = `
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Label</th>
+                        <th>Runtime(s)</th>
+                        <th>Energy(J)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tbody}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function updateDerivedMetrics(containerId,derived) {
+        const rows = derived.map(row => `
+            <tr>
+                <td>${row.name}</td>
+                <td>${fmt(row.Absolute)} ${row.value_unit}</td>
+                <td>${Number(row.Relative).toFixed(3)}</td>
+            </tr>
+        `).join("");
+          
+        document.getElementById(containerId).innerHTML = `
+            <table class="metrics-table derived-table">
+                <thead>
+                    <tr>
+                        <th>Insight</th>
+                        <th>Absolute</th>
+                        <th>Relative</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function fmt(v, digits = 3) {
+        return (typeof v === "number" && isFinite(v))
+            ? v.toFixed(digits)
+            : "—";
+    }
+
+
+
+    // -------------------------------
+    // Add point (plot ONLY)
+    // -------------------------------
+    pointSelect.addEventListener("change", () => {
+    const idx = pointSelect.value;
+    if (idx === "") return;
+
+    const p = allPoints[idx];
+    if (addedLabels.has(p.label)) return;
+
+    plotContexts.forEach(ctx => {
+      Plotly.addTraces(ctx.plotId, {
+        x: [p.runtime],
+        y: [p.energy],
+        mode: "markers",
+        name: p.label
+      });
+
+      updatePowerLines(
+        ctx.plotId,
+        recomputeXMax(ctx.plotId)
+      );
+    });
+
+    addedLabels.add(p.label);
+    plottedPoints.set(p.label, p);
+
+    const opt = new Option(p.label, p.label);
+    computeSelect.appendChild(opt);
+
+    pointSelect.value = "";
+    });
+
+
+    // -------------------------------
+    // Compute (remove old intersections)
+    // -------------------------------
+    computeBtn.addEventListener("click", () => {
+    const label = computeSelect.value;
+    if (!label) return;
+
+    const p = plottedPoints.get(label);
+    if (!p) return;
+
+    plotContexts.forEach(ctx => {
+      if (ctx.plotId != "plot3") {
+      fetch("/compute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          point: p,
+          pmin: ctx.pmin,
+          pmax: ctx.pmax
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        removeComputeTraces(ctx.plotId);
+
+        // intersections
+        data.intersections.forEach(pt => {
+          Plotly.addTraces(ctx.plotId, {
+            x: [pt.x],
+            y: [pt.y],
+            mode: "markers+text",
+            marker:{
+              size:9,
+              symbol:"circle",
+              color:"black"
+            },
+            text: [pt.label],
+            textposition:labelPositionFromLine(pt.line),
+            textfont:{
+              size:12,
+              color:"black"
+            },
+            name:pt.label,
+            meta:{type: "intersection" }
+          });
+        });
+
+        // curves
+        Plotly.addTraces(ctx.plotId, {
+          x: data.edd_curve_limit.runtime,
+          y: data.edd_curve_limit.energy,
+          mode: "lines",
+          name: "EDD limit constraint",
+          line: { color: "orange", width: 2, dash: "dashdot" },
+          meta: { type: "edd_limit" }
+        });
+
+        Plotly.addTraces(ctx.plotId, {
+          x: data.edd_curve.runtime,
+          y: data.edd_curve.energy,
+          mode: "lines",
+          name: "EDD optimisation constraint",
+          line: { color: "orange", width: 2},
+          meta: { type: "edd" }
+        });
+
+
+
+        // plot theta to D line
+        Plotly.addTraces(ctx.plotId, {
+            x: data.D_line.runtime,
+            y: data.D_line.energy,
+            mode: "lines",
+            name: "max energy save",
+            line: { color: "black", width: 2, dash: "dashdot"},
+            meta: {type: "D_line"}
+        });
+
+                // plot C Curve
+        Plotly.addTraces(ctx.plotId, {
+            x: data.C_line.runtime,
+            y: data.C_line.energy,
+            mode: "lines",
+            name: "Contribution Bound",
+            line: { color: "blue", width: 2},
+            meta: {type: "C_line"}
+        });
+
+        
+        updatePowerLines(ctx.plotId,recomputeXMax(ctx.plotId));
+        updateResultsPanel(ctx.resultsId, data.metrics);
+        updateDerivedMetrics(ctx.derivedId, data.metrics.derived_metrics);
+      });
+      }
+      else {
+        removeComputeTraces(ctx.plotId);
+
+        // Loop over ALL plotted points
+        plottedPoints.forEach((p, label) => {
+        fetch("/compute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          point: p,
+          pmin: ctx.pmin,
+          pmax: ctx.pmax
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+
+        // intersections
+        //data.intersections.forEach(pt => {
+        //  if(pt.label !== "A" &&  pt.label !== "E" && pt.label !== "B" ){
+        //  Plotly.addTraces(ctx.plotId, {
+        //    x: [pt.x],
+        //    y: [pt.y],
+        //    mode: "markers+text",
+        //    marker:{
+        //      size:9,
+        //      symbol:"circle",
+        //      color:"black"
+        //    },
+        //    text: [pt.label],
+        //    textposition:labelPositionFromLine(pt.line),
+        //    textfont:{
+        //      size:12,
+        //      color:"black"
+        //    },
+        //    name:pt.label,
+        //    meta:{type: "intersection" }
+        //  });
+        //}
+        //});
+//
+//
+
+        // plot theta to D line
+        Plotly.addTraces(ctx.plotId, {
+            x: data.D_line.runtime,
+            y: data.D_line.energy,
+            mode: "lines",
+            name: "max energy save",
+            line: { color: "black", width: 2, dash: "dashdot"},
+            meta: {type: "D_line"}
+        });
+
+                // plot C Curve
+        Plotly.addTraces(ctx.plotId, {
+            x: data.C_line.runtime,
+            y: data.C_line.energy,
+            mode: "lines",
+            name: "Contribution Bound",
+            line: { color: "blue", width: 2},
+            meta: {type: "C_line"}
+        });
+
+        
+        updatePowerLines(ctx.plotId,recomputeXMax(ctx.plotId));
+      });
+    });
+      }
+    });
+    });
+
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+
+        // find the parent results panel
+        const results = btn.closest(".results");
+
+        // deactivate tabs ONLY in this panel
+        results.querySelectorAll(".tab-btn").forEach(b =>
+            b.classList.remove("active")
+        );
+        results.querySelectorAll(".tab-content").forEach(c =>
+            c.classList.remove("active")
+        );
+
+        // activate selected
+        btn.classList.add("active");
+        results
+            .querySelector("#tab-" + btn.dataset.tab)
+            .classList.add("active");
+        });
+    });
+
+</script>
+
+
+
+</body>
+</html>
