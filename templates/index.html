@@ -135,6 +135,18 @@
     </select>
 </div>
 
+<!-- drop down selection of benchmark-->
+<div class="controls">
+  <label for="datasetSelect">Dataset:</label>
+  <select id="datasetSelect">
+    <option value="MG">MG</option>
+    <option value="FFT">FFT</option>
+    <option value="LU">LU</option>
+    <option value="CG">CG</option>
+  </select>
+</div>
+
+
 <!-- COMPUTE -->
 <div class="controls">
     <label for="computeSelect">Compute for:</label>
@@ -315,24 +327,24 @@
     }
 
 
-function updatePowerLines(plotId, xMax) {
-  const gd = document.getElementById(plotId);
-
-  gd.data.forEach((trace, i) => {
-    if (trace.meta?.type === "power") {
-      const slope = trace.meta.slope;
-
-      Plotly.restyle(
-        plotId,
-        {
-          x: [[0, xMax]],
-          y: [[0, slope * xMax]]
-        },
-        [i]
-      );
+    function updatePowerLines(plotId, xMax) {
+      const gd = document.getElementById(plotId);
+    
+      gd.data.forEach((trace, i) => {
+        if (trace.meta?.type === "power") {
+          const slope = trace.meta.slope;
+        
+          Plotly.restyle(
+            plotId,
+            {
+              x: [[0, xMax]],
+              y: [[0, slope * xMax]]
+            },
+            [i]
+          );
+        }
+      });
     }
-  });
-}
 
 
 
@@ -439,6 +451,20 @@ function updatePowerLines(plotId, xMax) {
             ? v.toFixed(digits)
             : "—";
     }
+
+    function resetPlots() {
+      plottedPoints.clear();
+      addedLabels.clear();
+      computeSelect.innerHTML = '<option value="">-- plotted points --</option>';
+    
+      plotContexts.forEach(ctx => {
+        Plotly.react(ctx.plotId, [], {
+          xaxis: { title: "Runtime" },
+          yaxis: { title: "Energy" }
+        });
+      });
+    }
+
 
 
 
@@ -661,6 +687,23 @@ function updatePowerLines(plotId, xMax) {
         results
             .querySelector("#tab-" + btn.dataset.tab)
             .classList.add("active");
+        });
+    });
+
+    const datasetSelect = document.getElementById("datasetSelect");
+
+    datasetSelect.addEventListener("change", () => {
+      fetch(`/load_dataset/${datasetSelect.value}`)
+        .then(r => r.json())
+        .then(data => {
+          // replace global data
+          allPoints.length = 0;
+          allPoints.push(...data.points);
+        
+          Object.assign(powerSets, data.power_sets);
+        
+          // clear plots + UI
+          resetPlots();
         });
     });
 

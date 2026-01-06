@@ -6,7 +6,41 @@ import numpy as np
 
 app = Flask(__name__)
 
-points_df = pd.read_csv("points_LU.csv")
+
+DATASETS = {
+    "MG": {
+        "points": "data/points_CG.csv",
+        "cases": {
+            "case1": "data/power.csv",
+            "case2": "data/power_roof.csv",
+            "case3": "data/power_roof.csv",
+        }
+    },
+    "FFT": {
+        "points": "data/points_FT.csv",
+        "cases": {
+            "case1": "data/power_FT.csv",
+            "case2": "data/power_FT_AI.csv",
+            "case3": "data/power_FT_AI.csv",
+        }
+    },
+    "CG": {
+        "points": "data/points_CG.csv",
+        "cases": {
+            "case1": "data/power_CG.csv",
+            "case2": "data/power_CG_AI.csv",
+            "case3": "data/power_CG_analysis.csv",
+        }
+    },
+    "LU": {
+        "points": "data/points_LU.csv",
+        "cases": {
+            "case1": "data/power_LU.csv",
+            "case2": "data/power_LU_AI.csv",
+            "case3": "data/power_LU_AI.csv",
+        }
+    }
+}
 
 
 
@@ -95,17 +129,24 @@ def compute_intersections(point, pmin, pmax):
 
 
 
-@app.route("/")
-def index():
-    return render_template(
-        "index.html",
-        points=points_df.to_dict(orient="records"),
-        power_sets=json.dumps({
-            "case1": pd.read_csv("power_LU.csv").set_index("name")["m"].to_dict(),
-            "case2": pd.read_csv("power_LU_AI.csv").set_index("name")["m"].to_dict(),
-            "case3": pd.read_csv("power_LU.csv").set_index("name")["m"].to_dict(),
-        })
-    )
+@app.route("/load_dataset/<name>")
+def load_dataset(name):
+    if name not in DATASETS:
+        return jsonify({"error": "unknown dataset"}), 400
+
+    cfg = DATASETS[name]
+
+    points = pd.read_csv(cfg["points"]).to_dict(orient="records")
+
+    power_sets = {}
+    for case, path in cfg["cases"].items():
+        df = pd.read_csv(path)
+        power_sets[case] = df.set_index("name")["m"].to_dict()
+
+    return jsonify({
+        "points": points,
+        "power_sets": power_sets
+    })
 
 
 
