@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 DATASETS = {
     "MG": {
-        "points": "data/points_CG.csv",
+        "points": "data/points.csv",
         "cases": {
             "case1": "data/power.csv",
             "case2": "data/power_roof.csv",
@@ -38,6 +38,14 @@ DATASETS = {
             "case1": "data/power_LU.csv",
             "case2": "data/power_LU_AI.csv",
             "case3": "data/power_LU_AI.csv",
+        }
+    },
+    "BT": {
+        "points": "data/points_BT.csv",
+        "cases": {
+            "case1": "data/power_BT.csv",
+            "case2": "data/power_BT_AI.csv",
+            "case3": "data/power_BT_analysis.csv",
         }
     }
 }
@@ -147,6 +155,19 @@ def load_dataset(name):
         "points": points,
         "power_sets": power_sets
     })
+
+@app.route("/")
+def index():
+    # load default dataset (MG) to render the page
+    cfg = DATASETS["MG"]
+    points = pd.read_csv(cfg["points"]).to_dict(orient="records")
+    power_sets = {}
+    for case, path in cfg["cases"].items():
+        df = pd.read_csv(path)
+        power_sets[case] = df.set_index("name")["m"].to_dict()
+
+    return render_template("index.html", points=points, power_sets=power_sets)
+
 
 
 

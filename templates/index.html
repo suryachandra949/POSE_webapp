@@ -124,16 +124,6 @@
 
 <h2>Runtime vs Energy</h2>
 
-<!-- ADD POINT -->
-<div class="controls">
-    <label for="pointSelect">Add point:</label>
-    <select id="pointSelect">
-        <option value="">-- select --</option>
-        {% for i in range(points|length) %}
-            <option value="{{ i }}">{{ points[i].label }}</option>
-        {% endfor %}
-    </select>
-</div>
 
 <!-- drop down selection of benchmark-->
 <div class="controls">
@@ -143,8 +133,18 @@
     <option value="FFT">FFT</option>
     <option value="LU">LU</option>
     <option value="CG">CG</option>
+    <option value="BT">BT</option>
   </select>
 </div>
+
+<!-- ADD POINT -->
+<div class="controls">
+    <label for="pointSelect">Add point:</label>
+    <select id="pointSelect">
+        <option value="">-- select --</option>
+    </select>
+</div>
+
 
 
 <!-- COMPUTE -->
@@ -164,7 +164,7 @@
         <div id="plot1" class="plot"></div>
 
         <div id="results1" class="results">
-            <h3>Case 1</h3>
+            <h3>POSE MODEL</h3>
 
             <div class="tabs">
                 <button class="tab-btn active" data-tab="points1">Point Metrics</button>
@@ -187,7 +187,7 @@
         <div id="plot2" class="plot"></div>
 
         <div id="results2" class="results">
-            <h3>Case 2</h3>
+            <h3>CACHE-AWARE POSE MODEL</h3>
 
             <div class="tabs">
                 <button class="tab-btn active" data-tab="points2">Point Metrics</button>
@@ -210,7 +210,7 @@
         <div id="plot3" class="plot"></div>
 
         <div id="results3" class="results">
-            <h3>Case 3</h3>
+            <h3>Frequency and powercap analysis space(Brainstorming space)</h3>
 
             <div class="tabs">
                 <button class="tab-btn active" data-tab="points3">Point Metrics</button>
@@ -239,8 +239,8 @@
 //    const allPoints = {{ points | safe }};
 //    const power = {{ power | safe }};
 
-    const allPoints = {{ points | safe }};
-    const powerSets = {{ power_sets | safe }};
+    let allPoints = {{ points | safe }};
+    let powerSets = {{ power_sets | safe }};
 
 
     const pointSelect = document.getElementById("pointSelect");
@@ -254,7 +254,7 @@
     const intersectionKeys = new Set();
     const plottedPoints = new Map(); // label -> point
 
-    const plotContexts = [
+    let plotContexts = [
       {
         plotId: "plot1",
         power: powerSets.case1,
@@ -290,6 +290,7 @@
 
       const COLORS = ["green", "red"];
 
+      const entries = Object.entries(ctx.power).sort((a, b) => a[1] - b[1]); 
       const powerTraces = Object.entries(ctx.power).map(
         ([name, slope], i) => ({
           x: [0,1],
@@ -452,18 +453,6 @@
             : "—";
     }
 
-    function resetPlots() {
-      plottedPoints.clear();
-      addedLabels.clear();
-      computeSelect.innerHTML = '<option value="">-- plotted points --</option>';
-    
-      plotContexts.forEach(ctx => {
-        Plotly.react(ctx.plotId, [], {
-          xaxis: { title: "Runtime" },
-          yaxis: { title: "Energy" }
-        });
-      });
-    }
 
 
 
@@ -690,22 +679,98 @@
         });
     });
 
-    const datasetSelect = document.getElementById("datasetSelect");
+// ========================
+// Initialize dataset
+// ========================
+function loadDataset(name){
+    fetch(`/load_dataset/${name}`)
+      .then(res=>{
+          if(!res.ok) throw new Error("HTTP "+res.status);
+          return res.json();
+      })
+      .then(data=>{
+          allPoints = data.points;
+          powerSets = data.power_sets;
 
-    datasetSelect.addEventListener("change", () => {
-      fetch(`/load_dataset/${datasetSelect.value}`)
-        .then(r => r.json())
-        .then(data => {
-          // replace global data
-          allPoints.length = 0;
-          allPoints.push(...data.points);
-        
-          Object.assign(powerSets, data.power_sets);
-        
-          // clear plots + UI
-          resetPlots();
+          resetPointDropdown(allPoints);
+          resetAllPlots();
+          initPlots();
+      })
+      .catch(err=>{
+          console.error("Failed to load dataset:", name, err);
+          alert("Failed to load dataset: "+name);
+      });
+}
+
+datasetSelect.addEventListener("change", ()=>loadDataset(datasetSelect.value));
+
+function initPlots(){
+    plotContexts = [
+      {
+        plotId: "plot1",
+        power: powerSets.case1,
+        pmin: Math.min(...Object.values(powerSets.case1)),
+        pmax: Math.max(...Object.values(powerSets.case1)),
+        resultsId: "results-content1",
+        derivedId: "derived-content1"
+      },
+      {
+        plotId: "plot2",
+        power: powerSets.case2,
+        pmin: Math.min(...Object.values(powerSets.case2)),
+        pmax: Math.max(...Object.values(powerSets.case2)),
+        resultsId: "results-content2",
+        derivedId: "derived-content2"
+      },
+      {
+        plotId: "plot3",
+        power: powerSets.case3,
+        pmin: Math.min(...Object.values(powerSets.case3)),
+        pmax: Math.max(...Object.values(powerSets.case3)),
+        resultsId: "results-content3",
+        derivedId: "derived-content3"
+      }
+    ];
+
+
+    plotContexts.forEach(ctx=>{
+        const COLORS = ["green","red"];
+
+        const entries = Object.entries(ctx.power).sort((a, b) => a[1] - b[1]); 
+        const powerTraces = entries.map(
+          ([name,slope],i)=>({
+            x:[0,1],
+            y:[0,slope],
+            mode:"lines",
+            name:name,
+            line:{color: COLORS[i]||"gray", width:2},
+            meta:{type:"power", slope:slope, name:name}
+          })
+        );
+        Plotly.newPlot(ctx.plotId, powerTraces, {
+            xaxis:{title:"Runtime"},
+            yaxis:{title:"Energy"}
         });
     });
+}
+
+
+function resetPointDropdown(points){
+  pointSelect.innerHTML = `<option value="">-- select --</option>`;
+  points.forEach((p,i)=>pointSelect.appendChild(new Option(p.label,i)));
+  computeSelect.innerHTML = `<option value="">-- plotted points --</option>`;
+  addedLabels.clear();
+  plottedPoints.clear();
+}
+
+
+function resetAllPlots() {
+    ["plot1", "plot2", "plot3"].forEach(id => {
+        Plotly.purge(id);
+    });
+}
+
+
 
 </script>
 
