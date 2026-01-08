@@ -9,11 +9,11 @@ app = Flask(__name__)
 
 DATASETS = {
     "MG": {
-        "points": "data/points.csv",
+        "points": "data/points_MG.csv",
         "cases": {
-            "case1": "data/power.csv",
-            "case2": "data/power_roof.csv",
-            "case3": "data/power_roof.csv",
+            "case1": "data/power_MG.csv",
+            "case2": "data/power_MG_AI.csv",
+            "case3": "data/power_MG_AI.csv",
         }
     },
     "FFT": {
