@@ -135,6 +135,7 @@
     <option value="CG">CG</option>
     <option value="BT">BT</option>
     <option value="EP">EP</option>
+    <option value="SP">SP</option>
   </select>
 </div>
 
@@ -240,8 +241,8 @@
 //    const allPoints = {{ points | safe }};
 //    const power = {{ power | safe }};
 
-    let allPoints = {{ points | safe }};
-    let powerSets = {{ power_sets | safe }};
+    let allPoints = {{ points | tojson }};
+    let powerSets = {{ power_sets | tojson }};
 
 
     const pointSelect = document.getElementById("pointSelect");
@@ -704,6 +705,10 @@ function loadDataset(name){
 }
 
 datasetSelect.addEventListener("change", ()=>loadDataset(datasetSelect.value));
+
+document.addEventListener("DOMContentLoaded", () => {
+    resetPointDropdown(allPoints);
+});
 
 function initPlots(){
     plotContexts = [

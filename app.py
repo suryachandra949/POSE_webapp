@@ -56,6 +56,14 @@ DATASETS = {
             "case3": "data/power_EP_analysis.csv",
         }
     },
+    "SP": {
+        "points": "data/points_SP.csv",
+        "cases": {
+            "case1": "data/power_SP.csv",
+            "case2": "data/power_SP_AI.csv",
+            "case3": "data/power_SP_analysis.csv",
+        }
+    },
 
 }
 
