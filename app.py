@@ -21,7 +21,7 @@ DATASETS = {
         "cases": {
             "case1": "data/power_FT.csv",
             "case2": "data/power_FT_AI.csv",
-            "case3": "data/power_FT_AI.csv",
+            "case3": "data/power_FT_adapt.csv",
         }
     },
     "CG": {
