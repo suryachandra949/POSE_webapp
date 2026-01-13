@@ -69,7 +69,7 @@ DATASETS = {
 
 
 
-def compute_intersections(point, pmin, pmax):
+def compute_intersections(point, pmin, pmax,alpha,beta):
     """
     point = {"runtime": float, "energy": float}
     pmin, pmax = floats
@@ -81,34 +81,33 @@ def compute_intersections(point, pmin, pmax):
     ]
     """
 
-    # ---- YOUR EXISTING CODE GOES HERE ----
+
 
 
     #Metric Calculation
-    beta = 1.732 * 200
 
     energy_value = point["energy"] 
     runtime_value = point["runtime"]
     power_value = energy_value / runtime_value
 
-    EDD_metric = math.sqrt((energy_value**2) + ((1.732 * 200) * runtime_value)**2)
+    EDD_metric = math.sqrt(((alpha*energy_value)**2) + ((beta) * runtime_value)**2)
 
-    EDD_max_runtime = math.sqrt((EDD_metric * EDD_metric) / ((pmax**2) + ((1.732*200)**2)))
+    EDD_max_runtime = math.sqrt((EDD_metric * EDD_metric) / (((alpha*pmax)**2) + ((beta)**2)))
     EDD_max_energy = pmax * EDD_max_runtime
 
-    EDD_min_runtime = math.sqrt((EDD_metric * EDD_metric) / ((pmin**2) + ((1.732*200)**2)))
+    EDD_min_runtime = math.sqrt((EDD_metric * EDD_metric) / (((alpha*pmin)**2) + ((beta)**2)))
     EDD_min_energy = pmin * EDD_min_runtime
 
     Point_D_runtime = runtime_value
     Point_D_energy = runtime_value * pmin
-
-    Point_C_runtime = (runtime_value) * math.sqrt((pmin**2 + (1.732*200)**2)/ (power_value**2 + (1.732*200)**2)) 
+ 
+    Point_C_runtime = runtime_value * math.sqrt(((alpha*pmin)**2 + beta**2)/(((alpha*power_value)**2 + beta**2)))
     Point_C_energy = pmin * Point_C_runtime
 
     #Metric Calculations
-    EDD_metric_limit = math.sqrt((Point_C_energy**2) + ((1.732 * 200) * Point_C_runtime)**2)
+    EDD_metric_limit = math.sqrt((alpha*Point_C_energy)**2 + (beta * Point_C_runtime)**2)
 
-    Point_A_runtime = math.sqrt((EDD_metric_limit * EDD_metric_limit) / ((pmax**2) + ((1.732*200)**2)))
+    Point_A_runtime = math.sqrt((EDD_metric_limit * EDD_metric_limit) / (((alpha*pmax)**2) + (beta**2)))
     Point_A_energy = pmax * Point_A_runtime 
 
 
@@ -196,7 +195,10 @@ def compute():
     pmin = data["pmin"]
     pmax = data["pmax"]
 
-    intersections,EDD_metric,EDD_metric_limit,code_runtime,code_energy = compute_intersections(point, pmin, pmax)
+    alpha = 1
+    beta = 1.732 * 200
+
+    intersections,EDD_metric,EDD_metric_limit,code_runtime,code_energy = compute_intersections(point, pmin, pmax,alpha,beta)
 
     #metrics list
     B = []
@@ -233,33 +235,19 @@ def compute():
             D_line_runtime.append(pt["x"])
             D_line_energy.append(pt["y"])
 
-    # Convert to parametric angles
-    beta = 1.732 * 200
-    theta_min = math.asin(min(e_edd_vals) / EDD_metric)
-    theta_max = math.asin(max(e_edd_vals) / EDD_metric)
+    # Curves
 
-    theta = np.linspace(theta_min, theta_max, 200)
-
-    edd_runtime = (EDD_metric / beta) * np.cos(theta)
-    edd_energy = EDD_metric * np.sin(theta)
+    edd_runtime = np.linspace(B[0],E[0],200)
+    edd_energy = np.sqrt((code_energy)**2 + ((beta/alpha)*code_runtime)**2 - ((beta/alpha)*edd_runtime)**2)
 
     # EDD limit curve
-    theta_max_limit = math.asin(max(e_limit_vals) / EDD_metric_limit)
-    theta_min_limit = math.asin(min(e_limit_vals) / EDD_metric_limit)
+    edd_runtime_limit = np.linspace(A[0],C[0],200)
+    edd_energy_limit = np.sqrt((C[1])**2 + ((beta/alpha)*C[0])**2 - ((beta/alpha)*edd_runtime_limit)**2)
 
-    theta = np.linspace(theta_min, theta_max, 200)
-    theta_limit = np.linspace(theta_min_limit, theta_max_limit, 200)
-
-    edd_runtime = (EDD_metric / beta) * np.cos(theta)
-    edd_energy = EDD_metric * np.sin(theta)
-
-    edd_runtime_limit = (EDD_metric_limit / beta) * np.cos(theta_limit)
-    edd_energy_limit = EDD_metric_limit * np.sin(theta_limit)
 
     # C_line curve
-    C_line_runtime = np.linspace(Point_C_runtime,code_runtime,200)
-    C_line_energy = C_line_runtime * np.sqrt( ((power_value*C_line_runtime)/code_runtime)**2 + ( (beta*C_line_runtime)/code_runtime )**2 - (beta)**2)
-
+    C_line_runtime = np.linspace(C[0],code_runtime,200)
+    C_line_energy = C_line_runtime * np.sqrt( ((power_value*C_line_runtime)/code_runtime)**2 + ( (beta*C_line_runtime)/(alpha*code_runtime) )**2 - (beta/alpha)**2)
 
     return jsonify({
         "intersections": intersections,
