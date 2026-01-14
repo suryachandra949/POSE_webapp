@@ -67,22 +67,58 @@ DATASETS = {
 
 }
 
+def plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E):
+    
+    if metric == "EDS": 
+        # Curves
+        edd_runtime = np.linspace(B[0],E[0],200)
+        edd_energy = code_energy + ((beta/alpha)*code_runtime) - ((beta/alpha)*edd_runtime)
+
+        # EDD limit curve
+        edd_runtime_limit = np.linspace(A[0],C[0],200)
+        edd_energy_limit = C[1] + ((beta/alpha)*C[0]) - ((beta/alpha)*edd_runtime_limit)
 
 
-def compute_intersections(point, pmin, pmax,alpha,beta):
-    """
-    point = {"runtime": float, "energy": float}
-    pmin, pmax = floats
+        # C_line curve
+        C_line_runtime = np.linspace(C[0],code_runtime,200)
+        C_line_energy = ((C_line_runtime**2)/code_runtime) *  (power_value +  beta/alpha) - (C_line_runtime * (beta/alpha))
+    
+    elif metric == "EDD":
+        # Curves
 
-    RETURN:
-    [
-        {"x": float, "y": float, "label": str},
-        ...
-    ]
-    """
+        edd_runtime = np.linspace(B[0],E[0],200)
+        edd_energy = np.sqrt((code_energy)**2 + ((beta/alpha)*code_runtime)**2 - ((beta/alpha)*edd_runtime)**2)
+
+        # EDD limit curve
+        edd_runtime_limit = np.linspace(A[0],C[0],200)
+        edd_energy_limit = np.sqrt((C[1])**2 + ((beta/alpha)*C[0])**2 - ((beta/alpha)*edd_runtime_limit)**2)
+
+
+        # C_line curve
+        C_line_runtime = np.linspace(C[0],code_runtime,200)
+        C_line_energy = C_line_runtime * np.sqrt( ((power_value*C_line_runtime)/code_runtime)**2 + ( (beta*C_line_runtime)/(alpha*code_runtime) )**2 - (beta/alpha)**2)
+
+    elif metric == "EDP":
+        # Curves
+
+        edd_runtime = np.linspace(B[0],E[0],200)
+        edd_energy = np.sqrt((code_energy)**2 + ((beta/alpha)*code_runtime)**2 - ((beta/alpha)*edd_runtime)**2)
+
+        # EDD limit curve
+        edd_runtime_limit = np.linspace(A[0],C[0],200)
+        edd_energy_limit = np.sqrt((C[1])**2 + ((beta/alpha)*C[0])**2 - ((beta/alpha)*edd_runtime_limit)**2)
+
+
+        # C_line curve
+        C_line_runtime = np.linspace(C[0],code_runtime,200)
+        C_line_energy = C_line_runtime * np.sqrt( ((power_value*C_line_runtime)/code_runtime)**2 + ( (beta*C_line_runtime)/(alpha*code_runtime) )**2 - (beta/alpha)**2)
+
+    return edd_runtime,edd_energy,edd_runtime_limit,edd_energy_limit,C_line_runtime,C_line_energy
 
 
 
+
+def compute_intersections(point, pmin, pmax, alpha, beta, metric):
 
     #Metric Calculation
 
@@ -90,26 +126,73 @@ def compute_intersections(point, pmin, pmax,alpha,beta):
     runtime_value = point["runtime"]
     power_value = energy_value / runtime_value
 
-    EDD_metric = math.sqrt(((alpha*energy_value)**2) + ((beta) * runtime_value)**2)
+    if metric == "EDD":
 
-    EDD_max_runtime = math.sqrt((EDD_metric * EDD_metric) / (((alpha*pmax)**2) + ((beta)**2)))
-    EDD_max_energy = pmax * EDD_max_runtime
+      EDD_metric = math.sqrt(((alpha*energy_value)**2) + ((beta) * runtime_value)**2)
 
-    EDD_min_runtime = math.sqrt((EDD_metric * EDD_metric) / (((alpha*pmin)**2) + ((beta)**2)))
-    EDD_min_energy = pmin * EDD_min_runtime
+      EDD_max_runtime = math.sqrt((EDD_metric * EDD_metric) / (((alpha*pmax)**2) + ((beta)**2)))
+      EDD_max_energy = pmax * EDD_max_runtime
 
-    Point_D_runtime = runtime_value
-    Point_D_energy = runtime_value * pmin
+      EDD_min_runtime = math.sqrt((EDD_metric * EDD_metric) / (((alpha*pmin)**2) + ((beta)**2)))
+      EDD_min_energy = pmin * EDD_min_runtime
+
+      Point_D_runtime = runtime_value
+      Point_D_energy = runtime_value * pmin
  
-    Point_C_runtime = runtime_value * math.sqrt(((alpha*pmin)**2 + beta**2)/(((alpha*power_value)**2 + beta**2)))
-    Point_C_energy = pmin * Point_C_runtime
+      Point_C_runtime = runtime_value * math.sqrt(((alpha*pmin)**2 + beta**2)/(((alpha*power_value)**2 + beta**2)))
+      Point_C_energy = pmin * Point_C_runtime
 
-    #Metric Calculations
-    EDD_metric_limit = math.sqrt((alpha*Point_C_energy)**2 + (beta * Point_C_runtime)**2)
+      #Metric Calculations
+      EDD_metric_limit = math.sqrt((alpha*Point_C_energy)**2 + (beta * Point_C_runtime)**2)
 
-    Point_A_runtime = math.sqrt((EDD_metric_limit * EDD_metric_limit) / (((alpha*pmax)**2) + (beta**2)))
-    Point_A_energy = pmax * Point_A_runtime 
+      Point_A_runtime = math.sqrt((EDD_metric_limit * EDD_metric_limit) / (((alpha*pmax)**2) + (beta**2)))
+      Point_A_energy = pmax * Point_A_runtime 
 
+    elif metric == "EDS":
+
+      EDD_metric = (alpha*energy_value) + ((beta) * runtime_value)
+
+      EDD_max_runtime = ((EDD_metric)/ ((alpha*pmax) + beta))
+      EDD_max_energy = pmax * EDD_max_runtime
+
+      EDD_min_runtime = ((EDD_metric) / ((alpha*pmin) + beta))
+      EDD_min_energy = pmin * EDD_min_runtime
+
+      Point_D_runtime = runtime_value
+      Point_D_energy = runtime_value * pmin
+ 
+      Point_C_runtime = runtime_value * (((alpha*pmin) + beta)/((alpha*power_value) + beta))
+      Point_C_energy = pmin * Point_C_runtime
+
+      #Metric Calculations
+      EDD_metric_limit = ((alpha*Point_C_energy) + (beta * Point_C_runtime))
+
+      Point_A_runtime = ((EDD_metric_limit) / ((alpha*pmax) + beta))
+      Point_A_energy = pmax * Point_A_runtime   
+
+    elif metric == "EDP":
+
+      EDD_metric = math.sqrt(((alpha*energy_value)**2) + ((beta) * runtime_value)**2)
+
+      EDD_max_runtime = math.sqrt((EDD_metric * EDD_metric) / (((alpha*pmax)**2) + ((beta)**2)))
+      EDD_max_energy = pmax * EDD_max_runtime
+
+      EDD_min_runtime = math.sqrt((EDD_metric * EDD_metric) / (((alpha*pmin)**2) + ((beta)**2)))
+      EDD_min_energy = pmin * EDD_min_runtime
+
+      Point_D_runtime = runtime_value
+      Point_D_energy = runtime_value * pmin
+ 
+      Point_C_runtime = runtime_value * math.sqrt(((alpha*pmin)**2 + beta**2)/(((alpha*power_value)**2 + beta**2)))
+      Point_C_energy = pmin * Point_C_runtime
+
+      #Metric Calculations
+      EDD_metric_limit = math.sqrt((alpha*Point_C_energy)**2 + (beta * Point_C_runtime)**2)
+
+      Point_A_runtime = math.sqrt((EDD_metric_limit * EDD_metric_limit) / (((alpha*pmax)**2) + (beta**2)))
+      Point_A_energy = pmax * Point_A_runtime   
+
+         
 
     intersections = []
 
@@ -194,11 +277,13 @@ def compute():
     point = data["point"]
     pmin = data["pmin"]
     pmax = data["pmax"]
+    alpha = float(data["alpha"])
+    beta = float(data["beta"])
+    metric = data["option"]
 
-    alpha = 1
-    beta = 1.732 * 200
 
-    intersections,EDD_metric,EDD_metric_limit,code_runtime,code_energy = compute_intersections(point, pmin, pmax,alpha,beta)
+
+    intersections,EDD_metric,EDD_metric_limit,code_runtime,code_energy = compute_intersections(point, pmin, pmax,alpha,beta,metric)
 
     #metrics list
     B = []
@@ -235,19 +320,8 @@ def compute():
             D_line_runtime.append(pt["x"])
             D_line_energy.append(pt["y"])
 
-    # Curves
+    edd_runtime,edd_energy,edd_runtime_limit,edd_energy_limit,C_line_runtime,C_line_energy = plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E)
 
-    edd_runtime = np.linspace(B[0],E[0],200)
-    edd_energy = np.sqrt((code_energy)**2 + ((beta/alpha)*code_runtime)**2 - ((beta/alpha)*edd_runtime)**2)
-
-    # EDD limit curve
-    edd_runtime_limit = np.linspace(A[0],C[0],200)
-    edd_energy_limit = np.sqrt((C[1])**2 + ((beta/alpha)*C[0])**2 - ((beta/alpha)*edd_runtime_limit)**2)
-
-
-    # C_line curve
-    C_line_runtime = np.linspace(C[0],code_runtime,200)
-    C_line_energy = C_line_runtime * np.sqrt( ((power_value*C_line_runtime)/code_runtime)**2 + ( (beta*C_line_runtime)/(alpha*code_runtime) )**2 - (beta/alpha)**2)
 
     return jsonify({
         "intersections": intersections,
@@ -299,6 +373,11 @@ def compute():
                 "label": "E",
                 "runtime": E[0],
                 "energy": E[1]
+            },
+            {
+                "label": metric,
+                "runtime": EDD_metric,
+                "energy": EDD_metric_limit
             }
         ],
         "derived_metrics": [
