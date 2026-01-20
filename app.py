@@ -13,7 +13,7 @@ DATASETS = {
         "cases": {
             "case1": "data/power_MG.csv",
             "case2": "data/power_MG_AI.csv",
-            "case3": "data/power_MG_AI.csv",
+            "case3": "data/power_MG_analysis.csv",
         }
     },
     "FFT": {
@@ -64,6 +64,14 @@ DATASETS = {
             "case3": "data/power_SP_analysis.csv",
         }
     },
+    "HACC": {
+        "points": "data/points_HACC.csv",
+        "cases": {
+            "case1": "data/power_HACC.csv",
+            "case2": "data/power_HACC_AI.csv",
+            "case3": "data/power_HACC_analysis.csv",
+        }
+    }
 
 }
 

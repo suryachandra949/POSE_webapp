@@ -1,6 +1,9 @@
 label,runtime,energy
-unoptimised MG,67.67,10810.2532
-Tiling_resid_MG,57.24,9362.885033
-Tiling_psinv_MG,51.23,8428.269106
-
-
+unoptimised MG_64_2.0GHz,67.67,10810.2532
+Tiling_resid_MG_64_2.0GHz,57.24,9362.885033
+Tiling_psinv_MG_64_2.0GHz,51.23,8428.269106
+Tiling_psinv_MG_64_1.70GHz,51.19,7878.626724
+Tiling_psinv_MG_64_1.50GHz,51.24,7649.400221
+Tiling_psinv_MG_64_turbo,50.77,11651.099158
+Tiling_psinv_MG_128_turbo,53.72,13016.193922
+Tiling_psinv_MG_128,53.64,9201.673827

@@ -1,3 +1,3 @@
 name,m
-pDram_sse_fma_64_2.0GHz,139.45585
+pL1_sse_fma_64_2.0GHz,107.9255240
 pL3_avx2_add_128_turbo,245.366339

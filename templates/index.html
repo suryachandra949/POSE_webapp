@@ -11,6 +11,7 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            background: #EEEBE5;
         }
       
         /* ===============================
@@ -49,6 +50,7 @@
             flex-direction: column;
             align-items: center;
             gap: 24px;
+            margin-top: 16px;
         }
       
         .block {
@@ -58,11 +60,31 @@
             max-width: 1100px;
         }
       
-        .plot {
-            flex: 1;
-            height: 420px;
-            min-width: 0;
+        .plot{
+          flex: 1;
+          min-height: 360px;
+          height: 45vh;
+          max-height: 520px;
+          min-width: 0;
+
+          /* IMPORTANT: don't style this like a card */
+          background: transparent;
+          border: none;
+          border-radius: 0;
+          padding: 0;
         }
+
+
+        @media (max-width: 900px) {
+            .block {
+                flex-direction: column;
+            }
+
+            .results {
+                width: 100%;
+            }
+        }
+
       
         /* ===============================
            Results panel
@@ -70,9 +92,10 @@
         .results {
             width: 260px;
             padding: 12px;
-            border: 1px solid #ccc;
-            background: #fafafa;
+            border: 1px solid #999;
+            background: #F8F6F0;
             font-size: 14px;
+            border-radius: 4px;
         }
         .tab-content {
             display: none;
@@ -149,6 +172,175 @@
         .option:hover {
             border-color: #2196f3;
         }
+        /* ===== Header ===== */
+        .app-header {
+          background: #6b4a3f;
+          color: white;
+          padding: 24px 32px;
+        }
+
+        .app-header h1 {
+          margin: 0 0 6px;
+          font-size: 28px;
+        }
+
+        .app-header p {
+          margin: 0;
+          opacity: 0.9;
+          max-width: 900px;
+        }
+
+        /* ===== Filters Card ===== */
+        .filters-card {
+          background: #F8F6F0;
+          border-bottom: 2px solid #d6cfc4;
+          padding: 16px 24px 20px;
+        }
+
+        .filters-title {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-weight: 600;
+          margin-bottom: 16px;
+        }
+
+        /* ===== Grid layout ===== */
+        .filters-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(220px, 1fr));
+          gap: 16px 24px;
+        }
+
+        .filter-item label {
+          display: block;
+          font-size: 13px;
+          margin-bottom: 6px;
+        }
+
+        .filter-item input,
+        .filter-item select {
+          width: 100%;
+          padding: 6px 8px;
+          font-size: 14px;
+        }
+
+        /* Button cell */
+        .button-item {
+          display: flex;
+          align-items: flex-end;
+        }
+
+        .button-item button {
+          width: 100%;
+          padding: 8px;
+          font-weight: 600;
+        }
+
+        /* ===== Options row ===== */
+        .options-row {
+          display: flex;
+          gap: 16px;
+          margin-top: 20px;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 1100px) {
+          .filters-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 600px) {
+          .filters-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .filters-title {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-icon {
+          font-size: 18px;
+          transition: transform 0.25s ease;
+        }
+
+        /* collapsed state */
+        .filters-card.collapsed .filters-content {
+          display: none;
+        }
+
+        .filters-card.collapsed .toggle-icon {
+          transform: rotate(-90deg);
+        }
+
+        .plot-area {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .plot-controls{
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12.5px;
+
+          flex-wrap: wrap;                 /* responsive */
+          padding-bottom: 8px;
+          border-bottom: 1px solid #d6cfc4; /* divider like reference UI */
+        }
+
+        .plot-controls label{
+          margin-right: 4px;
+          font-weight: 600;
+          white-space: nowrap;
+        }
+
+        .plot-controls select{
+          min-width: 130px;   /* wider = looks embedded */
+          padding: 4px 6px;
+          font-size: 13px;
+        }
+
+        .plot-card{
+          background: #F8F6F0;
+          border: 1.5px solid #999;
+          border-radius: 6px;
+          padding: 10px;
+        }
+
+        .clear-plot-btn{
+          margin-left: auto;          /* push to right */
+          width: 28px;
+          height: 28px;
+                
+          display: flex;
+          align-items: center;
+          justify-content: center;
+                
+          font-size: 16px;
+          line-height: 1;
+                
+          border: none;
+          background: transparent;
+          border-radius: 4px;
+                
+          cursor: pointer;
+          color: #555;
+        }
+        
+        .clear-plot-btn:hover{
+          background: #e6e6e6;
+          color: #000;
+        }
+        
+        .clear-plot-btn:active{
+          background: #dcdcdc;
+        }
 
 
     </style>
@@ -156,72 +348,66 @@
 </head>
 <body>
 
-<h2>Power Optimised Software Envelope Models</h2>
-
-
-<!-- drop down selection of benchmark-->
-<div class="controls">
-  <label for="datasetSelect">Dataset:</label>
-  <select id="datasetSelect">
-    <option value="MG">MG</option>
-    <option value="FFT">FFT</option>
-    <option value="LU">LU</option>
-    <option value="CG">CG</option>
-    <option value="BT">BT</option>
-    <option value="EP">EP</option>
-    <option value="SP">SP</option>
-  </select>
+<div class="app-header">
+  <div class="header-left">
+    <h1>Power Optimised Software Envelope Models</h1>
+    <p>
+      Interactive analysis of runtime–energy tradeoffs using POSE models.
+    </p>
+  </div>
 </div>
 
-<!-- ADD POINT -->
-<div class="controls">
-    <label for="pointSelect">Add point:</label>
-    <select id="pointSelect">
-        <option value="">-- select --</option>
-    </select>
-</div>
+<div class="filters-card">
+  <div class="filters-title" id="filtersToggle">
+  <span class="toggle-icon" id="toggleIcon">⚙️</span>
+  <span>Filters</span>
+  </div>
+
+  <div class="filters-content" id="filtersContent">
+  <div class="filters-grid">
+
+    <!-- Dataset -->
+    <div class="filter-item">
+      <label>Dataset</label>
+      <select id="datasetSelect">
+        <option value="MG">MG</option>
+        <option value="FFT">FFT</option>
+        <option value="LU">LU</option>
+        <option value="CG">CG</option>
+        <option value="BT">BT</option>
+        <option value="EP">EP</option>
+        <option value="SP">SP</option>
+        <option value="HACC">HACC</option>
+      </select>
+    </div>
 
 
 
-<!-- COMPUTE -->
-<div class="controls compute-row">
+    <!-- Alpha -->
+    <div class="filter-item">
+      <label>α (alpha)</label>
+      <input id="alpha" type="number" step="any"
+        value="0.00000004444444444" />
+    </div>
 
-    <!-- Alpha value-->
-
-    <label for="alpha"> α (alpha):</label>
-    <input
-      id="alpha"
-      type="number"
-      step="any"
-      value="0.00000004444444444"
-      style="width:120px"
-    />
+    <!-- Beta -->
+    <div class="filter-item">
+      <label>β (beta)</label>
+      <input id="beta" type="number" step="any"
+        value="0.00006363423285" />
+    </div>
 
 
-    <!-- Beta value-->
+    </div>
 
-    <label for="beta">β (beta):</label>
-    <input
-      id="beta"
-      type="number"
-      step="any"
-      value="0.00006363423285"
-      style="width:120px"
-    />
+  </div>
 
-    <label for="computeSelect">Compute for:</label>
-    <select id="computeSelect">
-        <option value="">-- plotted points --</option>
-    </select>
-
-    <button id="computeBtn" type="button">Compute</button>
-
-</div>
-
-<div class="options">
-  <div class="option" data-value="EDD">EDD</div>
-  <div class="option" data-value="EDS">EDS</div>
-  <div class="option" data-value="EDP">EDP</div>
+  <!-- Options row -->
+  <div class="options-row">
+    <div class="option" data-value="EDD">EDD</div>
+    <div class="option" data-value="EDS">EDS</div>
+    <div class="option" data-value="EDP">EDP</div>
+  </div>
 </div>
 
 
@@ -230,7 +416,31 @@
 
     <!-- ===== CASE 1 ===== -->
     <div class="block">
-        <div id="plot1" class="plot"></div>
+        <div class="plot-area">
+          <div class="plot-card">
+          <div class="plot-controls">
+            <label>PLOT:</label>
+            <select id="pointSelect1"></select>
+          
+            <label>COMPUTE:</label>
+            <select id="computeSelect1"></select>
+
+            <button
+              class="clear-plot-btn"
+              data-plot="plot1"
+              type="button"
+              title="Clear plot"
+              aria-label="Clear plot">
+              🧹
+
+            </button>
+
+          </div>
+
+          <div id="plot1" class="plot"></div>
+        </div>
+        </div>
+
 
         <div id="results1" class="results">
             <h3>POSE MODEL</h3>
@@ -253,7 +463,28 @@
 
     <!-- ===== CASE 2 ===== -->
     <div class="block">
-        <div id="plot2" class="plot"></div>
+        <div class="plot-area">
+          <div class="plot-card">
+          <div class="plot-controls">
+            <label>PLOT:</label>
+            <select id="pointSelect2"></select>
+          
+            <label>COMPUTE:</label>
+            <select id="computeSelect2"></select>
+            <button
+              class="clear-plot-btn"
+              data-plot="plot2"
+              type="button"
+              title="Clear plot"
+              aria-label="Clear plot">
+              🧹
+
+            </button>
+          </div>
+
+          <div id="plot2" class="plot"></div>
+        </div>
+        </div>
 
         <div id="results2" class="results">
             <h3>CACHE-AWARE POSE MODEL</h3>
@@ -276,7 +507,28 @@
 
     <!-- ===== CASE 3 ===== -->
     <div class="block">
-        <div id="plot3" class="plot"></div>
+        <div class="plot-area">
+          <div class="plot-card">
+          <div class="plot-controls">
+            <label>PLOT:</label>
+            <select id="pointSelect3"></select>
+          
+            <label>COMPUTE:</label>
+            <select id="computeSelect3"></select>
+            <button
+              class="clear-plot-btn"
+              data-plot="plot3"
+              type="button"
+              title="Clear plot"
+              aria-label="Clear plot">
+              🧹
+
+            </button>
+          </div>
+
+          <div id="plot3" class="plot"></div>
+        </div>
+        </div>
 
         <div id="results3" class="results">
             <h3>Frequency and powercap analysis space(Brainstorming space)</h3>
@@ -311,16 +563,30 @@
     let allPoints = {{ points | tojson }};
     let powerSets = {{ power_sets | tojson }};
 
+    const datasetSelect = document.getElementById("datasetSelect");
 
-    const pointSelect = document.getElementById("pointSelect");
-    const computeSelect = document.getElementById("computeSelect");
-    const computeBtn = document.getElementById("computeBtn");
+    const plotUI = {
+      plot1: {
+        pointSelect: document.getElementById("pointSelect1"),
+        computeSelect: document.getElementById("computeSelect1")
+      },
+      plot2: {
+        pointSelect: document.getElementById("pointSelect2"),
+        computeSelect: document.getElementById("computeSelect2")
+      },
+      plot3: {
+        pointSelect: document.getElementById("pointSelect3"),
+        computeSelect: document.getElementById("computeSelect3")
+      }
+    };
+
+
 
     // -------------------------------
     // State tracking
     // -------------------------------
     const addedLabels = new Set();
-    const intersectionKeys = new Set();
+
     const plottedPoints = new Map(); // label -> point
 
     let plotContexts = [
@@ -351,47 +617,22 @@
     ];
 
     let selectedOption = null;  // store the currently selected circle
-   
     
-
-    // -------------------------------
-    // Initial plot (power lines)
-    // -------------------------------
-    plotContexts.forEach(ctx => {
-
-      const COLORS = ["green", "red"];
-
-      const entries = Object.entries(ctx.power).sort((a, b) => a[1] - b[1]); 
-      const powerTraces = Object.entries(ctx.power).map(
-        ([name, slope], i) => ({
-          x: [0,1],
-          y:[0, slope],
-          mode: "lines",
-          name: name,
-          line: {
-            color: COLORS[i] || "gray",
-            width: 2
-          },
-          meta: {
-            type: "power",
-            slope: slope,
-            name: name
-          }
-        })
-      );
-      Plotly.newPlot(
-        ctx.plotId, powerTraces,
-        {
-          xaxis: { title: "Runtime" },
-          yaxis: { title: "Energy" }
-        }
-      );
-    });
-   
 
     // -------------------------------
     // Helpers
     // -------------------------------
+
+    function resizeAllPlots() {
+      ["plot1", "plot2", "plot3"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) Plotly.Plots.resize(el);
+      });
+    }
+
+    window.addEventListener("resize", resizeAllPlots);
+
+
     function recomputeXMax(plotId) {
         const gd = document.getElementById(plotId);
         const xVals = gd.data.flatMap(t => t.x || []);
@@ -530,233 +771,148 @@
         }
     }
 
-        // -------------------------------
-    // Compute (remove old intersections)
-    // -------------------------------
-    function runCompute(OptionValue){
-        const label = computeSelect.value;
-        if (!label) return;
+    function runComputeForPlot(plotId, label, optionValue) {
+  if (!label || !optionValue) return;
 
-        const p = plottedPoints.get(label);
-        if (!p) return;
+  const alpha = Number(document.getElementById("alpha").value);
+  if (!isFinite(alpha) || alpha <= 0) { alert("α must be a positive number"); return; }
 
-        const alpha = Number(document.getElementById("alpha").value);
-        if (!isFinite(alpha) || alpha <= 0) {
-          alert("α must be a positive number");
-        return;
-        }
-      
-        const beta = Number(document.getElementById("beta").value);
-        if (!isFinite(beta) || beta <= 0) {
-          alert("β must be a positive number");
-        return;
-        }
-      
-      
-        plotContexts.forEach(ctx => {
-          if (ctx.plotId != "plot3") {
-          fetch("/compute", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              point: p,
-              pmin: ctx.pmin,
-              pmax: ctx.pmax,
-              alpha: alpha,
-              beta: beta,
-              option: OptionValue
-            })
-          })
-          .then(r => r.json())
-          .then(data => {
-            removeComputeTraces(ctx.plotId);
-          
-            // intersections
-            data.intersections.forEach(pt => {
-              Plotly.addTraces(ctx.plotId, {
-                x: [pt.x],
-                y: [pt.y],
-                mode: "markers+text",
-                marker:{
-                  size:9,
-                  symbol:"circle",
-                  color:"black"
-                },
-                text: [pt.label],
-                textposition:labelPositionFromLine(pt.line),
-                textfont:{
-                  size:12,
-                  color:"black"
-                },
-                name:pt.label,
-                meta:{type: "intersection" }
-              });
-            });
-          
-            // curves
-            Plotly.addTraces(ctx.plotId, {
-              x: data.edd_curve_limit.runtime,
-              y: data.edd_curve_limit.energy,
-              mode: "lines",
-              name: "EDD limit constraint",
-              line: { color: "orange", width: 2, dash: "dashdot" },
-              meta: { type: "edd_limit" }
-            });
-          
-            Plotly.addTraces(ctx.plotId, {
-              x: data.edd_curve.runtime,
-              y: data.edd_curve.energy,
-              mode: "lines",
-              name: "EDD optimisation constraint",
-              line: { color: "orange", width: 2},
-              meta: { type: "edd" }
-            });
-          
-          
-          
-            // plot theta to D line
-            Plotly.addTraces(ctx.plotId, {
-                x: data.D_line.runtime,
-                y: data.D_line.energy,
-                mode: "lines",
-                name: "max energy save",
-                line: { color: "black", width: 2, dash: "dashdot"},
-                meta: {type: "D_line"}
-            });
-          
-                    // plot C Curve
-            Plotly.addTraces(ctx.plotId, {
-                x: data.C_line.runtime,
-                y: data.C_line.energy,
-                mode: "lines",
-                name: "Contribution Bound",
-                line: { color: "blue", width: 2},
-                meta: {type: "C_line"}
-            });
-          
+  const beta = Number(document.getElementById("beta").value);
+  if (!isFinite(beta) || beta <= 0) { alert("β must be a positive number"); return; }
 
-            updatePowerLines(ctx.plotId,recomputeXMax(ctx.plotId));
-            updateResultsPanel(ctx.resultsId, data.metrics);
-            updateDerivedMetrics(ctx.derivedId, data.metrics.derived_metrics);
-          });
-          }
-          else {
-            removeComputeTraces(ctx.plotId);
-          
-            // Loop over ALL plotted points
-            plottedPoints.forEach((p, label) => {
-            fetch("/compute", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              point: p,
-              pmin: ctx.pmin,
-              pmax: ctx.pmax,
-              alpha: alpha,
-              beta: beta,
-              option: OptionValue
-            })
-          })
-          .then(r => r.json())
-          .then(data => {
-          
-            // intersections
-            //data.intersections.forEach(pt => {
-            //  if(pt.label !== "A" &&  pt.label !== "E" && pt.label !== "B" ){
-            //  Plotly.addTraces(ctx.plotId, {
-            //    x: [pt.x],
-            //    y: [pt.y],
-            //    mode: "markers+text",
-            //    marker:{
-            //      size:9,
-            //      symbol:"circle",
-            //      color:"black"
-            //    },
-            //    text: [pt.label],
-            //    textposition:labelPositionFromLine(pt.line),
-            //    textfont:{
-            //      size:12,
-            //      color:"black"
-            //    },
-            //    name:pt.label,
-            //    meta:{type: "intersection" }
-            //  });
-            //}
-            //});
-//    
-//    
-          
-            // plot theta to D line
-            Plotly.addTraces(ctx.plotId, {
-                x: data.D_line.runtime,
-                y: data.D_line.energy,
-                mode: "lines",
-                name: "max energy save",
-                line: { color: "black", width: 2, dash: "dashdot"},
-                meta: {type: "D_line"}
-            });
-          
-                    // plot C Curve
-            Plotly.addTraces(ctx.plotId, {
-                x: data.C_line.runtime,
-                y: data.C_line.energy,
-                mode: "lines",
-                name: "Contribution Bound",
-                line: { color: "blue", width: 2},
-                meta: {type: "C_line"}
-            });
-          
+  const ctx = plotContexts.find(c => c.plotId === plotId);
+  if (!ctx) return;
 
-            updatePowerLines(ctx.plotId,recomputeXMax(ctx.plotId));
-          });
+  removeComputeTraces(plotId);
+
+  // ✅ plot3 special behavior: COMPUTE: ALL plotted points
+  if (plotId === "plot3") {
+    if (plottedPoints.size === 0) return;
+    plottedPoints.forEach((p) => {
+      fetch("/compute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          point: p,
+          pmin: ctx.pmin,
+          pmax: ctx.pmax,
+          alpha,
+          beta,
+          option: optionValue
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        Plotly.addTraces(plotId, {
+          x: data.D_line.runtime,
+          y: data.D_line.energy,
+          mode: "lines",
+          name: "max energy save",
+          line: { color: "black", width: 2, dash: "dashdot" },
+          meta: { type: "D_line" }
         });
-          }
+
+        Plotly.addTraces(plotId, {
+          x: data.C_line.runtime,
+          y: data.C_line.energy,
+          mode: "lines",
+          name: "Contribution Bound",
+          line: { color: "blue", width: 2 },
+          meta: { type: "C_line" }
         });
-        }
 
-
-
-
-
-    // -------------------------------
-    // Add point (plot ONLY)
-    // -------------------------------
-    pointSelect.addEventListener("change", () => {
-    const idx = pointSelect.value;
-    if (idx === "") return;
-
-    const p = allPoints[idx];
-    if (addedLabels.has(p.label)) return;
-
-    plotContexts.forEach(ctx => {
-      Plotly.addTraces(ctx.plotId, {
-        x: [p.runtime],
-        y: [p.energy],
-        mode: "markers",
-        name: p.label
+        updatePowerLines(plotId, recomputeXMax(plotId));
       });
+    });
+    return;
+  }
 
-      updatePowerLines(
-        ctx.plotId,
-        recomputeXMax(ctx.plotId)
-      );
+  // ✅ plot1/plot2 normal behavior: COMPUTE: selected label
+  const p = plottedPoints.get(label);
+  if (!p) return;
+
+  fetch("/compute", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      point: p,
+      pmin: ctx.pmin,
+      pmax: ctx.pmax,
+      alpha,
+      beta,
+      option: optionValue
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    data.intersections.forEach(pt => {
+      Plotly.addTraces(plotId, {
+        x: [pt.x],
+        y: [pt.y],
+        mode: "markers+text",
+        marker: { size: 9, symbol: "circle", color: "black" },
+        text: [pt.label],
+        textposition: labelPositionFromLine(pt.line),
+        textfont: { size: 12, color: "black" },
+        showlegend: false,
+        meta: { type: "intersection" }
+      });
     });
 
-    addedLabels.add(p.label);
-    plottedPoints.set(p.label, p);
-
-    const opt = new Option(p.label, p.label);
-    computeSelect.appendChild(opt);
-
-    pointSelect.value = "";
+    Plotly.addTraces(plotId, {
+      x: data.edd_curve_limit.runtime,
+      y: data.edd_curve_limit.energy,
+      mode: "lines",
+      name: "EDD limit constraint",
+      line: { color: "orange", width: 2, dash: "dashdot" },
+      meta: { type: "edd_limit" }
     });
 
-
-
-    computeBtn.addEventListener("click", () => {
-    
-      runCompute(selectedOption);
+    Plotly.addTraces(plotId, {
+      x: data.edd_curve.runtime,
+      y: data.edd_curve.energy,
+      mode: "lines",
+      name: "EDD optimisation constraint",
+      line: { color: "orange", width: 2 },
+      meta: { type: "edd" }
     });
+
+    Plotly.addTraces(plotId, {
+      x: data.D_line.runtime,
+      y: data.D_line.energy,
+      mode: "lines",
+      name: "max energy save",
+      line: { color: "black", width: 2, dash: "dashdot" },
+      meta: { type: "D_line" }
+    });
+
+    Plotly.addTraces(plotId, {
+      x: data.C_line.runtime,
+      y: data.C_line.energy,
+      mode: "lines",
+      name: "Contribution Bound",
+      line: { color: "blue", width: 2 },
+      meta: { type: "C_line" }
+    });
+
+    updatePowerLines(plotId, recomputeXMax(plotId));
+    updateResultsPanel(ctx.resultsId, data.metrics);
+    updateDerivedMetrics(ctx.derivedId, data.metrics.derived_metrics);
+  });
+}
+
+function attachComputeSelectHandlers() {
+  Object.entries(plotUI).forEach(([plotId, ui]) => {
+    ui.computeSelect.onchange = () => {
+      const label = ui.computeSelect.value;
+      if (!label || !selectedOption) return;
+      runComputeForPlot(plotId, label, selectedOption);
+    };
+  });
+}
+
+
+
 
     document.querySelectorAll(".tab-btn").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -796,6 +952,9 @@ function loadDataset(name){
           resetPointDropdown(allPoints);
           resetAllPlots();
           initPlots();
+          attachAddPointHandlers();
+          attachComputeSelectHandlers();
+
       })
       .catch(err=>{
           console.error("Failed to load dataset:", name, err);
@@ -807,9 +966,39 @@ datasetSelect.addEventListener("change", ()=>loadDataset(datasetSelect.value));
 
 document.addEventListener("DOMContentLoaded", () => {
     resetPointDropdown(allPoints);
+    resetAllPlots();
+    initPlots();
+    attachAddPointHandlers();
+    attachComputeSelectHandlers();
+    attachClearButtons();
+
+    // Set default alpha and beta values
+    document.getElementById("alpha").value = "0.00000004444444444";
+    document.getElementById("beta").value = "0.00006363423285";
+
     const defaultOption = options[0];          // choose first circle by default
     defaultOption.classList.add("selected");   // highlight
     selectedOption = defaultOption.dataset.value;
+
+    const filtersToggle = document.getElementById("filtersToggle");
+    const filtersCard = document.querySelector(".filters-card");
+    const toggleIcon = document.getElementById("toggleIcon");
+
+    filtersToggle.addEventListener("click", () => {
+        const collapsed = filtersCard.classList.toggle("collapsed");
+
+        // Change icon
+        toggleIcon.textContent = collapsed ? "☰" : "⚙️";
+
+        // Resize plots after toggle
+        setTimeout(() => {
+          ["plot1", "plot2", "plot3"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) Plotly.Plots.resize(el);
+          });
+  }, 150);
+});
+
 });
 
 function initPlots(){
@@ -855,21 +1044,103 @@ function initPlots(){
             meta:{type:"power", slope:slope, name:name}
           })
         );
-        Plotly.newPlot(ctx.plotId, powerTraces, {
-            xaxis:{title:"Runtime"},
-            yaxis:{title:"Energy"}
-        });
+        Plotly.newPlot(
+            ctx.plotId,
+            powerTraces,
+            {
+              autosize: true,
+              paper_bgcolor: "#F8F6F0",   // outside plot area
+              plot_bgcolor: "#fafafa",  // inside plot area
+            
+              xaxis: {
+                title: "Runtime",
+                showgrid: true,
+                gridcolor: "#ddd",
+                zeroline: false,
+                showline: true,
+                linewidth: 2,
+                linecolor: "#000",
+                mirror: true           // border on all sides
+              },
+            
+              yaxis: {
+                title: "Energy",
+                showgrid: true,
+                gridcolor: "#ddd",
+                zeroline: false,
+                showline: true,
+                linewidth: 2,
+                linecolor: "#000",
+                mirror: true
+              },
+            
+              margin: { l: 60, r: 30, t: 40, b: 50 },
+              legend: {
+                bgcolor: "rgba(255,255,255,0.9)",
+                bordercolor: "#aaa",
+                borderwidth: 1
+              }
+            },
+            {
+                responsive: true
+            }
+        );
     });
 }
 
 
-function resetPointDropdown(points){
-  pointSelect.innerHTML = `<option value="">-- select --</option>`;
-  points.forEach((p,i)=>pointSelect.appendChild(new Option(p.label,i)));
-  computeSelect.innerHTML = `<option value="">-- plotted points --</option>`;
+function resetPointDropdown(points) {
+  // reset plot dropdowns
+  Object.values(plotUI).forEach(ui => {
+    ui.pointSelect.innerHTML = `<option value="">-- select --</option>`;
+    points.forEach((p, i) => ui.pointSelect.appendChild(new Option(p.label, i)));
+
+    ui.computeSelect.innerHTML = `<option value="">-- plotted points --</option>`;
+  });
+
   addedLabels.clear();
   plottedPoints.clear();
 }
+
+function attachAddPointHandlers() {
+  Object.entries(plotUI).forEach(([plotId, ui]) => {
+    ui.pointSelect.onchange = () => {
+      const idx = ui.pointSelect.value;
+      if (idx === "") return;
+
+      const p = allPoints[idx];
+      if (!p) return;
+
+      // track globally (so plot3 can loop all points)
+      if (!addedLabels.has(p.label)) {
+        addedLabels.add(p.label);
+        plottedPoints.set(p.label, p);
+      }
+
+      // PLOT: to THIS plot only
+      Plotly.addTraces(plotId, {
+        x: [p.runtime],
+        y: [p.energy],
+        mode: "markers",
+        name: p.label,
+        
+        marker: { size: 8 }
+      });
+
+      updatePowerLines(plotId, recomputeXMax(plotId));
+
+      // add to THIS plot’s compute dropdown
+      const exists = Array.from(ui.computeSelect.options).some(o => o.value === p.label);
+      if (!exists) ui.computeSelect.appendChild(new Option(p.label, p.label));
+
+      // optionally auto-select last added point for compute
+      ui.computeSelect.value = p.label;
+
+      ui.pointSelect.value = "";
+    };
+  });
+}
+
 
 
 function resetAllPlots() {
@@ -881,26 +1152,100 @@ function resetAllPlots() {
 // Circle click handler
 const options = document.querySelectorAll(".option");
 options.forEach(opt => {
-    opt.addEventListener("click", () => {
-        // Remove highlight from all
-        options.forEach(o => o.classList.remove("selected"));
-        // Highlight clicked
-        opt.classList.add("selected");
+  opt.addEventListener("click", () => {
+    options.forEach(o => o.classList.remove("selected"));
+    opt.classList.add("selected");
 
-        selectedOption = opt.dataset.value;   // store selection
-        console.log("Selected:", selectedOption);
+    selectedOption = opt.dataset.value;
 
-        runCompute(selectedOption);           // trigger compute immediately
+    // recompute plots that have a selected compute point
+    Object.entries(plotUI).forEach(([plotId, ui]) => {
+      const label = ui.computeSelect.value;
+      if (!label) return;
+      runComputeForPlot(plotId, label, selectedOption);
     });
+  });
 });
 
+
+// Add change listeners to alpha and beta inputs
+["alpha", "beta"].forEach(id => {
+  const input = document.getElementById(id);
+  
+  input.addEventListener("change", () => {
+    const value = Number(input.value);
+    
+    if (!isFinite(value) || value <= 0) {
+      alert(`${id} must be a positive number`);
+      // Optionally reset to default if invalid
+      input.value = (id === "alpha") 
+        ? "0.00000004444444444" 
+        : "0.00006363423285";
+      return;
+    }
+
+    // If needed, you can trigger a recompute here automatically
+    Object.entries(plotUI).forEach(([plotId, ui]) => {
+      const label = ui.computeSelect.value;
+      if (label && selectedOption) runComputeForPlot(plotId, label, selectedOption);
+    });
+
+    console.log(`${id} changed to`, value);
+    
+  });
+});
+
+function getPowerTraceIndices(plotId){
+  const gd = document.getElementById(plotId);
+  if (!gd || !gd.data) return [];
+  const keep = [];
+  gd.data.forEach((t, i) => {
+    if (t.meta?.type === "power") keep.push(i);
+  });
+  return keep;
+}
+
+function clearPlot(plotId){
+  const ctx = plotContexts.find(c => c.plotId === plotId);
+  if (!ctx) return;
+
+  const gd = document.getElementById(plotId);
+  if (!gd || !gd.data) return;
+
+  // delete everything except power lines
+  const keep = new Set(getPowerTraceIndices(plotId));
+  const toDelete = gd.data.map((_, i) => i).filter(i => !keep.has(i));
+  if (toDelete.length) Plotly.deleteTraces(plotId, toDelete);
+
+  // also remove compute traces (safe if already removed)
+  removeComputeTraces(plotId);
+
+  // reset power line extents back to baseline
+  updatePowerLines(plotId, 1);
+
+  // reset this plot's dropdowns
+  if (plotUI[plotId]) {
+    plotUI[plotId].computeSelect.innerHTML = `<option value="">-- plotted points --</option>`;
+    plotUI[plotId].pointSelect.value = "";
+  }
+
+  // clear this plot’s result panel (optional but recommended)
+  document.getElementById(ctx.resultsId).innerHTML = "";
+  document.getElementById(ctx.derivedId).innerHTML = "";
+}
+
+function attachClearButtons(){
+  document.querySelectorAll(".clear-plot-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      clearPlot(btn.dataset.plot);
+    });
+  });
+}
 
 
 
 
 </script>
-
-
 
 </body>
 </html>
