@@ -1,3 +1,4 @@
-name,m
-pmin_64_2.0GHz,94.39056
-pmax,241.7848
+name,m,role
+pmin_64_2.0GHz,94.39056,pmin
+pmax,241.7848,pmax
+pmax_64_turbo,245.410,pmax

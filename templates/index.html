@@ -342,6 +342,15 @@
           background: #dcdcdc;
         }
 
+        .row-break{
+          flex-basis: 100%;      /* take full row */
+          width: 0;              /* don’t create extra space */
+          height: 0;             /* invisible */
+          padding: 0;
+          margin: 0;
+        }
+
+        .hidden{ display:none; }
 
     </style>
 
@@ -397,6 +406,14 @@
         value="0.00006363423285" />
     </div>
 
+    <!-- n(EDP) -->
+    <div class="filter-item">
+      <label>n (EDP)</label>
+      <input id="n" type="number" step="any"
+         value="3" />
+    </div>
+
+
 
     </div>
 
@@ -419,25 +436,45 @@
         <div class="plot-area">
           <div class="plot-card">
           <div class="plot-controls">
-            <label>PLOT:</label>
-            <select id="pointSelect1"></select>
-          
-            <label>COMPUTE:</label>
-            <select id="computeSelect1"></select>
+            
+          <!-- ===== ROW 1 ===== -->
+          <label>PMIN:</label>
+          <select id="pminSelect1"></select>
 
-            <button
-              class="clear-plot-btn"
-              data-plot="plot1"
-              type="button"
-              title="Clear plot"
-              aria-label="Clear plot">
-              🧹
+          <label>PMAX:</label>
+          <select id="pmaxSelect1"></select>
 
-            </button>
+          <button
+            class="clear-plot-btn"
+            data-plot="plot1"
+            type="button"
+            title="Clear plot"
+            aria-label="Clear plot">
+            🧹
+          </button>
+
+          <label style="margin-left:12px;">
+            <input type="checkbox" id="plot1BatchToggle">
+                    Batch view </label>
+
+        
+          <!-- force next row -->
+          <span class="row-break"></span>
+        
+          <!-- ===== ROW 2 ===== -->
+          <label>PLOT:</label>
+          <select id="pointSelect1"></select>
+        
+          <label>COMPUTE:</label>
+          <select id="computeSelect1"></select>
 
           </div>
 
           <div id="plot1" class="plot"></div>
+          <div id="plot1BatchWrap" class="plot hidden">
+          <div id="plot1_batch" style="width:100%;height:100%;"></div>
+        </div>
+
         </div>
         </div>
 
@@ -466,23 +503,45 @@
         <div class="plot-area">
           <div class="plot-card">
           <div class="plot-controls">
-            <label>PLOT:</label>
-            <select id="pointSelect2"></select>
-          
-            <label>COMPUTE:</label>
-            <select id="computeSelect2"></select>
-            <button
-              class="clear-plot-btn"
-              data-plot="plot2"
-              type="button"
-              title="Clear plot"
-              aria-label="Clear plot">
-              🧹
 
-            </button>
+          <!-- ===== ROW 1 ===== -->
+          <label>PMIN:</label>
+          <select id="pminSelect2"></select>
+
+          <label>PMAX:</label>
+          <select id="pmaxSelect2"></select>
+
+          <button
+            class="clear-plot-btn"
+            data-plot="plot2"
+            type="button"
+            title="Clear plot"
+            aria-label="Clear plot">
+            🧹
+          </button>
+
+          <label style="margin-left:12px;">
+            <input type="checkbox" id="plot2BatchToggle">
+                Batch view
+            </label>
+
+        
+          <!-- force next row -->
+          <span class="row-break"></span>
+        
+          <!-- ===== ROW 2 ===== -->
+          <label>PLOT:</label>
+          <select id="pointSelect2"></select>
+        
+          <label>COMPUTE:</label>
+          <select id="computeSelect2"></select>
           </div>
 
           <div id="plot2" class="plot"></div>
+          <div id="plot2BatchWrap" class="plot hidden">
+            <div id="plot2_batch" style="width:100%;height:100%;"></div>
+          </div>
+
         </div>
         </div>
 
@@ -510,20 +569,32 @@
         <div class="plot-area">
           <div class="plot-card">
           <div class="plot-controls">
-            <label>PLOT:</label>
-            <select id="pointSelect3"></select>
-          
-            <label>COMPUTE:</label>
-            <select id="computeSelect3"></select>
-            <button
-              class="clear-plot-btn"
-              data-plot="plot3"
-              type="button"
-              title="Clear plot"
-              aria-label="Clear plot">
-              🧹
 
-            </button>
+          <!-- ===== ROW 1 ===== -->
+          <label>PMIN:</label>
+          <select id="pminSelect3"></select>
+
+          <label>PMAX:</label>
+          <select id="pmaxSelect3"></select>
+
+          <button
+            class="clear-plot-btn"
+            data-plot="plot3"
+            type="button"
+            title="Clear plot"
+            aria-label="Clear plot">
+            🧹
+          </button>
+        
+          <!-- force next row -->
+          <span class="row-break"></span>
+        
+          <!-- ===== ROW 2 ===== -->
+          <label>PLOT:</label>
+          <select id="pointSelect3"></select>
+        
+          <label>COMPUTE:</label>
+          <select id="computeSelect3"></select>
           </div>
 
           <div id="plot3" class="plot"></div>
@@ -568,18 +639,30 @@
     const plotUI = {
       plot1: {
         pointSelect: document.getElementById("pointSelect1"),
-        computeSelect: document.getElementById("computeSelect1")
+        computeSelect: document.getElementById("computeSelect1"),
+        pminSelect: document.getElementById("pminSelect1"),
+        pmaxSelect: document.getElementById("pmaxSelect1"),
       },
       plot2: {
         pointSelect: document.getElementById("pointSelect2"),
-        computeSelect: document.getElementById("computeSelect2")
+        computeSelect: document.getElementById("computeSelect2"),
+        pminSelect: document.getElementById("pminSelect2"),
+        pmaxSelect: document.getElementById("pmaxSelect2"),
       },
       plot3: {
         pointSelect: document.getElementById("pointSelect3"),
-        computeSelect: document.getElementById("computeSelect3")
+        computeSelect: document.getElementById("computeSelect3"),
+        pminSelect: document.getElementById("pminSelect3"),
+        pmaxSelect: document.getElementById("pmaxSelect3"),
       }
     };
 
+
+    const plotState = {
+      plot1: { labels: new Set(), token: 0 },
+      plot2: { labels: new Set(), token: 0 },
+      plot3: { labels: new Set(), token: 0 }
+    };
 
 
     // -------------------------------
@@ -771,8 +854,146 @@
         }
     }
 
+function isAnyBatchOn(){
+  return !!(
+    document.getElementById("plot1BatchToggle")?.checked ||
+    document.getElementById("plot2BatchToggle")?.checked
+  );
+}
+
+function setGlobalControlsEnabled(enabled){
+  const disable = !enabled;
+
+  document.getElementById("datasetSelect").disabled = disable;
+  document.getElementById("alpha").disabled = disable;
+  document.getElementById("beta").disabled  = disable;
+
+  // metric circles
+  document.querySelectorAll(".option").forEach(opt => {
+    opt.style.pointerEvents = disable ? "none" : "auto";
+    opt.style.opacity = disable ? "0.5" : "1";
+  });
+}
+
+function setPlotControlsEnabled(plotId, enabled){
+  const ui = plotUI[plotId];
+  if (!ui) return;
+  const disable = !enabled;
+
+  ui.pminSelect.disabled = disable;
+  ui.pmaxSelect.disabled = disable;
+  ui.pointSelect.disabled = disable;
+  ui.computeSelect.disabled = disable;
+
+  document.querySelectorAll(`.clear-plot-btn[data-plot="${plotId}"]`).forEach(btn=>{
+    btn.disabled = disable;
+    btn.style.pointerEvents = disable ? "none" : "auto";
+    btn.style.opacity = disable ? "0.5" : "1";
+  });
+}
+
+
+function initBatchPlotFromSource(sourcePlotId, batchPlotId){
+  const src = document.getElementById(sourcePlotId);
+  if (!src?.data) return Promise.resolve();;
+
+  // clone only power traces (so batch view looks like that plot's power setup)
+  const powerTraces = src.data
+    .filter(t => t.meta?.type === "power" && t.meta?.role !== "pmax")
+    .map(t => JSON.parse(JSON.stringify(t))); // deep copy
+
+  const layout = JSON.parse(JSON.stringify(src.layout || {}));
+  //layout.title = layout.title || {};
+  //layout.title.text = `${sourcePlotId.toUpperCase()} — Batch view`;
+
+  return Plotly.newPlot(batchPlotId, powerTraces, layout, {responsive:true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: batchPlotId, scale: 1} });
+}
+
+function runBatchComputeFor(sourcePlotId, batchPlotId){
+  if (!selectedOption) return;
+
+  // use the source plot's current selected pmin/pmax
+  const pm = getSelectedPminPmax(sourcePlotId);
+  if (!pm) { alert("Select PMIN and PMAX first"); return; }
+
+  const alpha = Number(document.getElementById("alpha").value);
+  const beta  = Number(document.getElementById("beta").value);
+
+  const n = Number(document.getElementById("n").value);
+  if (!isFinite(n) || n <= 0) { alert("n must be a positive number"); return; }
+
+
+  // batch points = points currently plotted on that plot (like plot3 logic)
+  const labels = plotState[sourcePlotId]?.labels;
+  if (!labels || labels.size === 0) return;
+
+  // remove old compute traces from the batch plot only
+  removeComputeTraces(batchPlotId);
+
+  let firstC = true;
+  let firstD = true;
+
+  labels.forEach(lbl => {
+    const p = plottedPoints.get(lbl);
+    if (!p) return;
+
+    fetch("/compute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        point: p,
+        pmin: pm.pmin,
+        pmax: pm.pmax,
+        alpha,
+        beta,
+        n,
+        option: selectedOption
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      // add to the BATCH plot (not the source plot)
+      Plotly.addTraces(batchPlotId, {
+        x: data.D_line.runtime,
+        y: data.D_line.energy,
+        mode: "lines",
+        name: "D-line" ,
+        legendgroup: "D_LINE",
+        showlegend: firstD,
+        hovertemplate: `D-line<br>Point: ${lbl}<extra></extra>`,
+        line: { color: "black", width: 1, dash: "dot" },
+        meta: { type: "D_line" }
+      });
+      firstD = false;
+
+      Plotly.addTraces(batchPlotId, {
+        x: data.C_line.runtime,
+        y: data.C_line.energy,
+        mode: "lines",
+        name: "C-line",
+        legendgroup: "C_LINE",
+        showlegend: firstC,
+        hovertemplate: `C-line<br>Point: ${lbl}<extra></extra>`,
+        line: { color: "#2B83BA", width: 1 },
+        meta: { type: "C_line" }
+      });
+      firstC =false;
+
+      // extend power lines on batch plot
+      updatePowerLines(batchPlotId, recomputeXMax(batchPlotId));
+    });
+  });
+}
+
+
+
     function runComputeForPlot(plotId, label, optionValue) {
   if (!label || !optionValue) return;
+
+  const myToken = plotState[plotId].token;   // ✅ capture token at start
+  
+  const pm = getSelectedPminPmax(plotId);
+  if (!pm) { alert("Select PMIN and PMAX first"); return; }
 
   const alpha = Number(document.getElementById("alpha").value);
   if (!isFinite(alpha) || alpha <= 0) { alert("α must be a positive number"); return; }
@@ -780,52 +1001,66 @@
   const beta = Number(document.getElementById("beta").value);
   if (!isFinite(beta) || beta <= 0) { alert("β must be a positive number"); return; }
 
+  const n = Number(document.getElementById("n").value);
+  if (!isFinite(n) || n <= 0) { alert("n must be a positive number"); return; }
+
   const ctx = plotContexts.find(c => c.plotId === plotId);
   if (!ctx) return;
 
   removeComputeTraces(plotId);
 
-  // ✅ plot3 special behavior: COMPUTE: ALL plotted points
-  if (plotId === "plot3") {
-    if (plottedPoints.size === 0) return;
-    plottedPoints.forEach((p) => {
-      fetch("/compute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          point: p,
-          pmin: ctx.pmin,
-          pmax: ctx.pmax,
-          alpha,
-          beta,
-          option: optionValue
-        })
+ // ✅ plot3 special behavior: COMPUTE: ONLY points currently plotted on plot3
+if (plotId === "plot3") {
+  if (plotState.plot3.labels.size === 0) return;
+
+  plotState.plot3.labels.forEach((lbl) => {
+    const p = plottedPoints.get(lbl);
+    if (!p) return;
+
+    fetch("/compute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        point: p,
+        pmin: pm.pmin,
+        pmax: pm.pmax,
+        alpha,
+        beta,
+        n,
+        option: optionValue
       })
-      .then(r => r.json())
-      .then(data => {
-        Plotly.addTraces(plotId, {
-          x: data.D_line.runtime,
-          y: data.D_line.energy,
-          mode: "lines",
-          name: "max energy save",
-          line: { color: "black", width: 2, dash: "dashdot" },
-          meta: { type: "D_line" }
-        });
+    })
+    .then(r => r.json())
+    .then(data => {
+      // ignore stale responses
+      if (myToken !== plotState[plotId].token) return;
 
-        Plotly.addTraces(plotId, {
-          x: data.C_line.runtime,
-          y: data.C_line.energy,
-          mode: "lines",
-          name: "Contribution Bound",
-          line: { color: "blue", width: 2 },
-          meta: { type: "C_line" }
-        });
-
-        updatePowerLines(plotId, recomputeXMax(plotId));
+      Plotly.addTraces(plotId, {
+        x: data.D_line.runtime,
+        y: data.D_line.energy,
+        mode: "lines",
+        name: "max energy save",
+        line: { color: "black", width: 1, dash: "dot" },
+        meta: { type: "D_line" }
       });
+
+      Plotly.addTraces(plotId, {
+        x: data.C_line.runtime,
+        y: data.C_line.energy,
+        mode: "lines",
+        name: "Contribution Bound",
+        line: { color: "#2B83BA", width: 1 },
+        meta: { type: "C_line" }
+      });
+
+      updatePowerLines(plotId, recomputeXMax(plotId));
     });
-    return;
-  }
+  });
+
+  return;
+}
+
+
 
   // ✅ plot1/plot2 normal behavior: COMPUTE: selected label
   const p = plottedPoints.get(label);
@@ -836,21 +1071,23 @@
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       point: p,
-      pmin: ctx.pmin,
-      pmax: ctx.pmax,
+      pmin: pm.pmin,
+      pmax: pm.pmax,
       alpha,
       beta,
+      n,
       option: optionValue
     })
   })
   .then(r => r.json())
   .then(data => {
+    if (myToken !== plotState[plotId].token) return;
     data.intersections.forEach(pt => {
       Plotly.addTraces(plotId, {
         x: [pt.x],
         y: [pt.y],
         mode: "markers+text",
-        marker: { size: 9, symbol: "circle", color: "black" },
+        marker: { size: 6, symbol: "circle", color: "black" },
         text: [pt.label],
         textposition: labelPositionFromLine(pt.line),
         textfont: { size: 12, color: "black" },
@@ -864,7 +1101,7 @@
       y: data.edd_curve_limit.energy,
       mode: "lines",
       name: "EDD limit constraint",
-      line: { color: "orange", width: 2, dash: "dashdot" },
+      line: { color: "orange", width: 1, dash: "dash" },
       meta: { type: "edd_limit" }
     });
 
@@ -873,7 +1110,7 @@
       y: data.edd_curve.energy,
       mode: "lines",
       name: "EDD optimisation constraint",
-      line: { color: "orange", width: 2 },
+      line: { color: "orange", width: 1 },
       meta: { type: "edd" }
     });
 
@@ -882,7 +1119,7 @@
       y: data.D_line.energy,
       mode: "lines",
       name: "max energy save",
-      line: { color: "black", width: 2, dash: "dashdot" },
+      line: { color: "black", width: 1, dash: "dot" },
       meta: { type: "D_line" }
     });
 
@@ -891,7 +1128,7 @@
       y: data.C_line.energy,
       mode: "lines",
       name: "Contribution Bound",
-      line: { color: "blue", width: 2 },
+      line: { color: "#2B83BA", width: 1 },
       meta: { type: "C_line" }
     });
 
@@ -900,6 +1137,50 @@
     updateDerivedMetrics(ctx.derivedId, data.metrics.derived_metrics);
   });
 }
+
+function addBatchPoints(sourcePlotId, batchPlotId){
+  const labels = plotState[sourcePlotId]?.labels;
+  if (!labels || labels.size === 0) return;
+
+  labels.forEach(lbl => {
+    const p = plottedPoints.get(lbl);
+    if (!p) return;
+
+    Plotly.addTraces(batchPlotId, {
+      x: [p.runtime],
+      y: [p.energy],
+      mode: "markers",
+      name: lbl,                // point label
+      marker: { size: 6 },
+      meta: { type: "point", label: lbl }
+    });
+  });
+}
+
+function attachPminPmaxHandlers() {
+  Object.entries(plotUI).forEach(([plotId, ui]) => {
+
+    // Use onchange (not addEventListener) so repeated calls won't double-bind
+    ui.pminSelect.onchange = () => {
+      const name = ui.pminSelect.value;
+      if (name) setPowerLineFromDropdown(plotId, "pmin", name);
+
+      const label = ui.computeSelect.value;
+      if (label && selectedOption) runComputeForPlot(plotId, label, selectedOption);
+    };
+
+    ui.pmaxSelect.onchange = () => {
+      const name = ui.pmaxSelect.value;
+      if (name) setPowerLineFromDropdown(plotId, "pmax", name);
+
+      const label = ui.computeSelect.value;
+      if (label && selectedOption) runComputeForPlot(plotId, label, selectedOption);
+    };
+
+  });
+}
+
+
 
 function attachComputeSelectHandlers() {
   Object.entries(plotUI).forEach(([plotId, ui]) => {
@@ -936,6 +1217,22 @@ function attachComputeSelectHandlers() {
         });
     });
 
+    function getSelectedPminPmax(plotId) {
+      const ctx = plotContexts.find(c => c.plotId === plotId);
+      const ui = plotUI[plotId];
+      if (!ctx || !ui) return null;
+
+      const pminKey = ui.pminSelect.value;
+      const pmaxKey = ui.pmaxSelect.value;
+      if (!pminKey || !pmaxKey) return null;
+
+      const pmin = ctx.power[pminKey];
+      const pmax = ctx.power[pmaxKey];
+      if (!isFinite(pmin) || !isFinite(pmax)) return null;
+
+      return { pmin, pmax, pminKey, pmaxKey };
+    }
+
 // ========================
 // Initialize dataset
 // ========================
@@ -952,6 +1249,12 @@ function loadDataset(name){
           resetPointDropdown(allPoints);
           resetAllPlots();
           initPlots();
+          populatePminPmax("plot1");
+          populatePminPmax("plot2");
+          populatePminPmax("plot3");
+
+
+          attachPminPmaxHandlers();
           attachAddPointHandlers();
           attachComputeSelectHandlers();
 
@@ -962,12 +1265,46 @@ function loadDataset(name){
       });
 }
 
+function populatePminPmax(plotId) {
+  const ctx = plotContexts.find(c => c.plotId === plotId);
+  const ui  = plotUI[plotId];
+  if (!ctx || !ui) return;
+
+  const slopes = ctx.power;       // {name: slope}
+  const roles  = ctx.roles || {}; // {name: "pmin"/"pmax"/"other"}
+
+  ui.pminSelect.innerHTML = `<option value="">-- pmin --</option>`;
+  ui.pmaxSelect.innerHTML = `<option value="">-- pmax --</option>`;
+
+  Object.keys(slopes).forEach(name => {
+    const role = roles[name];
+    if (role === "pmin") ui.pminSelect.appendChild(new Option(name, name));
+    if (role === "pmax") ui.pmaxSelect.appendChild(new Option(name, name));
+  });
+
+  // ✅ auto-select FIRST available (not only when exactly 1)
+  if (!ui.pminSelect.value && ui.pminSelect.options.length > 1) ui.pminSelect.selectedIndex = 1;
+  if (!ui.pmaxSelect.value && ui.pmaxSelect.options.length > 1) ui.pmaxSelect.selectedIndex = 1;
+
+  // ✅ immediately apply to replace placeholder lines
+  if (ui.pminSelect.value) setPowerLineFromDropdown(plotId, "pmin", ui.pminSelect.value);
+  if (ui.pmaxSelect.value) setPowerLineFromDropdown(plotId, "pmax", ui.pmaxSelect.value);
+}
+
+
+
 datasetSelect.addEventListener("change", ()=>loadDataset(datasetSelect.value));
 
 document.addEventListener("DOMContentLoaded", () => {
     resetPointDropdown(allPoints);
     resetAllPlots();
     initPlots();
+
+    populatePminPmax("plot1");
+    populatePminPmax("plot2");
+    populatePminPmax("plot3");
+
+    attachPminPmaxHandlers();
     attachAddPointHandlers();
     attachComputeSelectHandlers();
     attachClearButtons();
@@ -976,9 +1313,109 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("alpha").value = "0.00000004444444444";
     document.getElementById("beta").value = "0.00006363423285";
 
+    const options = document.querySelectorAll(".option");
+
+    options.forEach(opt => {
+      opt.addEventListener("click", () => {
+        options.forEach(o => o.classList.remove("selected"));
+        opt.classList.add("selected");
+
+        selectedOption = opt.dataset.value;
+        console.log("Selected metric:", selectedOption);
+
+        Object.entries(plotUI).forEach(([plotId, ui]) => {
+          const label = ui.computeSelect.value;
+          if (!label) return;
+          runComputeForPlot(plotId, label, selectedOption);
+        });
+      });
+    });
+
     const defaultOption = options[0];          // choose first circle by default
     defaultOption.classList.add("selected");   // highlight
     selectedOption = defaultOption.dataset.value;
+
+
+    // =========================
+  // ✅ Batch toggles (MUST be OUTSIDE the loop above)
+  // =========================
+  const t1 = document.getElementById("plot1BatchToggle");
+  const t2 = document.getElementById("plot2BatchToggle");
+
+  const w1 = document.getElementById("plot1BatchWrap");
+  const w2 = document.getElementById("plot2BatchWrap");
+
+function refreshLocks(){
+  const b1 = document.getElementById("plot1BatchToggle")?.checked;
+  const b2 = document.getElementById("plot2BatchToggle")?.checked;
+
+  // ✅ global is locked if ANY batch is on
+  setGlobalControlsEnabled(!(b1 || b2));
+
+  // ✅ per-plot: only lock the plot that is in batch mode
+  setPlotControlsEnabled("plot1", !b1);
+  setPlotControlsEnabled("plot2", !b2);
+}
+
+
+  async function enterBatch(sourcePlotId){
+  refreshLocks();
+
+  if (sourcePlotId === "plot1"){
+    // ✅ swap plots in-place
+    document.getElementById("plot1").classList.add("hidden");
+    w1.classList.remove("hidden");
+
+    await initBatchPlotFromSource("plot1", "plot1_batch");
+
+    removeBatchPointTraces("plot1_batch");
+    addBatchPoints("plot1", "plot1_batch");
+    runBatchComputeFor("plot1", "plot1_batch");
+
+    // optional: force resize
+    Plotly.Plots.resize(document.getElementById("plot1_batch"));
+  }
+
+  if (sourcePlotId === "plot2"){
+    document.getElementById("plot2").classList.add("hidden");
+    w2.classList.remove("hidden");
+
+    await initBatchPlotFromSource("plot2", "plot2_batch");
+
+    removeBatchPointTraces("plot2_batch");
+    addBatchPoints("plot2", "plot2_batch"); 
+    runBatchComputeFor("plot2", "plot2_batch");
+
+    Plotly.Plots.resize(document.getElementById("plot2_batch"));
+  }
+}
+
+function exitBatch(sourcePlotId){
+  if (sourcePlotId === "plot1"){
+    // ✅ swap back
+    w1.classList.add("hidden");
+    document.getElementById("plot1").classList.remove("hidden");
+
+    Plotly.purge("plot1_batch");
+    Plotly.Plots.resize(document.getElementById("plot1"));
+  }
+
+  if (sourcePlotId === "plot2"){
+    w2.classList.add("hidden");
+    document.getElementById("plot2").classList.remove("hidden");
+
+    Plotly.purge("plot2_batch");
+    Plotly.Plots.resize(document.getElementById("plot2"));
+  }
+
+  refreshLocks();
+}
+
+
+  t1.onchange = () => (t1.checked ? enterBatch("plot1") : exitBatch("plot1"));
+  t2.onchange = () => (t2.checked ? enterBatch("plot2") : exitBatch("plot2"));
+
+  refreshLocks();
 
     const filtersToggle = document.getElementById("filtersToggle");
     const filtersCard = document.querySelector(".filters-card");
@@ -1002,90 +1439,143 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initPlots(){
-    plotContexts = [
+  plotContexts = [
+    {
+      plotId: "plot1",
+      power: powerSets.case1.slopes,
+      roles: powerSets.case1.roles,
+      resultsId: "results-content1",
+      derivedId: "derived-content1"
+    },
+    {
+      plotId: "plot2",
+      power: powerSets.case2.slopes,
+      roles: powerSets.case2.roles,
+      resultsId: "results-content2",
+      derivedId: "derived-content2"
+    },
+    {
+      plotId: "plot3",
+      power: powerSets.case3.slopes,
+      roles: powerSets.case3.roles,
+      resultsId: "results-content3",
+      derivedId: "derived-content3"
+    }
+  ];
+
+  plotContexts.forEach(ctx => {
+    const slopes = ctx.power;
+    const roles  = ctx.roles || {};
+
+    // 1) Plot ONLY "other" lines at startup
+    const otherEntries = Object.entries(slopes)
+      .filter(([name]) => (roles[name] || "other") === "other")
+      .sort((a, b) => a[1] - b[1]);
+
+    const otherTraces = otherEntries.map(([name, slope]) => ({
+      x: [0, 1],
+      y: [0, slope],
+      mode: "lines",
+      name: name,
+      line: { width: 2 },                 // no forced colors
+      meta: { type: "power", role: "other", slope, name }
+    }));
+
+    // 2) Add placeholder traces for PMIN + PMAX (these will be replaced)
+    const pminTrace = {
+      x: [0, 1],
+      y: [0, 1],
+      mode: "lines",
+      name: "PMIN",
+      line: { width: 2, color: "green" },   // ✅ green
+      meta: { type: "power", role: "pmin", slope: 1, name: "PMIN" }
+    };
+
+    const pmaxTrace = {
+      x: [0, 1],
+      y: [0, 1],
+      mode: "lines",
+      name: "PMAX",
+      line: { width: 2, color: "red" },     // ✅ red
+      meta: { type: "power", role: "pmax", slope: 1, name: "PMAX" }
+    };
+
+
+    Plotly.newPlot(
+      ctx.plotId,
+      [...otherTraces, pminTrace, pmaxTrace],
       {
-        plotId: "plot1",
-        power: powerSets.case1,
-        pmin: Math.min(...Object.values(powerSets.case1)),
-        pmax: Math.max(...Object.values(powerSets.case1)),
-        resultsId: "results-content1",
-        derivedId: "derived-content1"
+        autosize: true,
+        paper_bgcolor: "#F8F6F0",
+        plot_bgcolor: "#fafafa",
+        xaxis: {
+          title: "Runtime",
+          showgrid: true,
+          gridcolor: "#ddd",
+          zeroline: false,
+          showline: true,
+          linewidth: 2,
+          linecolor: "#000",
+          mirror: true
+        },
+        yaxis: {
+          title: "Energy",
+          showgrid: true,
+          gridcolor: "#ddd",
+          zeroline: false,
+          showline: true,
+          linewidth: 2,
+          linecolor: "#000",
+          mirror: true
+        },
+        margin: { l: 60, r: 30, t: 40, b: 50 },
+        legend: {
+          bgcolor: "rgba(255,255,255,0.9)",
+          bordercolor: "#aaa",
+          borderwidth: 1
+        }
       },
-      {
-        plotId: "plot2",
-        power: powerSets.case2,
-        pmin: Math.min(...Object.values(powerSets.case2)),
-        pmax: Math.max(...Object.values(powerSets.case2)),
-        resultsId: "results-content2",
-        derivedId: "derived-content2"
-      },
-      {
-        plotId: "plot3",
-        power: powerSets.case3,
-        pmin: Math.min(...Object.values(powerSets.case3)),
-        pmax: Math.max(...Object.values(powerSets.case3)),
-        resultsId: "results-content3",
-        derivedId: "derived-content3"
+      { responsive: true,
+        displaylogo: false,
+        toImageButtonOptions: {
+        format: "svg",          // ✅ SVG export
+        filename: ctx.plotId,   // plot1 / plot2 / plot3
+        scale: 1
+       }
       }
-    ];
+    );
+  });
+}
 
+function findPowerTraceIndexByRole(plotId, role){
+  const gd = document.getElementById(plotId);
+  if (!gd?.data) return -1;
+  return gd.data.findIndex(t => t.meta?.type === "power" && t.meta?.role === role);
+}
 
-    plotContexts.forEach(ctx=>{
-        const COLORS = ["green","red"];
+function setPowerLineFromDropdown(plotId, role, chosenName){
+  const ctx = plotContexts.find(c => c.plotId === plotId);
+  if (!ctx) return;
 
-        const entries = Object.entries(ctx.power).sort((a, b) => a[1] - b[1]); 
-        const powerTraces = entries.map(
-          ([name,slope],i)=>({
-            x:[0,1],
-            y:[0,slope],
-            mode:"lines",
-            name:name,
-            line:{color: COLORS[i]||"gray", width:2},
-            meta:{type:"power", slope:slope, name:name}
-          })
-        );
-        Plotly.newPlot(
-            ctx.plotId,
-            powerTraces,
-            {
-              autosize: true,
-              paper_bgcolor: "#F8F6F0",   // outside plot area
-              plot_bgcolor: "#fafafa",  // inside plot area
-            
-              xaxis: {
-                title: "Runtime",
-                showgrid: true,
-                gridcolor: "#ddd",
-                zeroline: false,
-                showline: true,
-                linewidth: 2,
-                linecolor: "#000",
-                mirror: true           // border on all sides
-              },
-            
-              yaxis: {
-                title: "Energy",
-                showgrid: true,
-                gridcolor: "#ddd",
-                zeroline: false,
-                showline: true,
-                linewidth: 2,
-                linecolor: "#000",
-                mirror: true
-              },
-            
-              margin: { l: 60, r: 30, t: 40, b: 50 },
-              legend: {
-                bgcolor: "rgba(255,255,255,0.9)",
-                bordercolor: "#aaa",
-                borderwidth: 1
-              }
-            },
-            {
-                responsive: true
-            }
-        );
-    });
+  const slope = ctx.power[chosenName];
+  if (!isFinite(slope)) return;
+
+  const gd = document.getElementById(plotId);
+  const idx = findPowerTraceIndexByRole(plotId, role);
+  if (!gd || idx === -1) return;
+
+  const oldMeta = gd.data[idx].meta || {};
+  const newMeta = { ...oldMeta, type: "power", role, slope, name: chosenName };
+
+  Plotly.restyle(plotId, {
+    x: [[0, 1]],
+    y: [[0, slope]],
+    name: [chosenName],
+    meta: [newMeta]
+  }, [idx]);
+
+  // extend lines correctly using the NEW meta.slope
+  updatePowerLines(plotId, recomputeXMax(plotId));
 }
 
 
@@ -1111,11 +1601,18 @@ function attachAddPointHandlers() {
       const p = allPoints[idx];
       if (!p) return;
 
-      // track globally (so plot3 can loop all points)
+      // ✅ prevent duplicates on the SAME plot
+      if (plotState[plotId].labels.has(p.label)) {
+        ui.pointSelect.value = "";   // reset dropdown
+        return;
+      }
+
+      // track globally (so plot3 / batch can use it)
       if (!addedLabels.has(p.label)) {
         addedLabels.add(p.label);
         plottedPoints.set(p.label, p);
       }
+
 
       // PLOT: to THIS plot only
       Plotly.addTraces(plotId, {
@@ -1123,9 +1620,12 @@ function attachAddPointHandlers() {
         y: [p.energy],
         mode: "markers",
         name: p.label,
-        
-        marker: { size: 8 }
+        legendgroup: "points",
+        showlegend: true,
+        marker: { size: 6 }
       });
+
+      plotState[plotId].labels.add(p.label);
 
       updatePowerLines(plotId, recomputeXMax(plotId));
 
@@ -1134,7 +1634,7 @@ function attachAddPointHandlers() {
       if (!exists) ui.computeSelect.appendChild(new Option(p.label, p.label));
 
       // optionally auto-select last added point for compute
-      ui.computeSelect.value = p.label;
+      ui.computeSelect.value = "";
 
       ui.pointSelect.value = "";
     };
@@ -1149,27 +1649,11 @@ function resetAllPlots() {
     });
 }
 
-// Circle click handler
-const options = document.querySelectorAll(".option");
-options.forEach(opt => {
-  opt.addEventListener("click", () => {
-    options.forEach(o => o.classList.remove("selected"));
-    opt.classList.add("selected");
 
-    selectedOption = opt.dataset.value;
-
-    // recompute plots that have a selected compute point
-    Object.entries(plotUI).forEach(([plotId, ui]) => {
-      const label = ui.computeSelect.value;
-      if (!label) return;
-      runComputeForPlot(plotId, label, selectedOption);
-    });
-  });
-});
 
 
 // Add change listeners to alpha and beta inputs
-["alpha", "beta"].forEach(id => {
+["alpha", "beta","n"].forEach(id => {
   const input = document.getElementById(id);
   
   input.addEventListener("change", () => {
@@ -1177,10 +1661,15 @@ options.forEach(opt => {
     
     if (!isFinite(value) || value <= 0) {
       alert(`${id} must be a positive number`);
-      // Optionally reset to default if invalid
-      input.value = (id === "alpha") 
-        ? "0.00000004444444444" 
-        : "0.00006363423285";
+      // ✅ reset correct default per parameter
+      if (id === "alpha") {
+        input.value = "0.00000004444444444";
+      } else if (id === "beta") {
+        input.value = "0.00006363423285";
+      } else if (id === "n") {
+        input.value = "3";               // ✅ default n
+      }
+
       return;
     }
 
@@ -1209,6 +1698,10 @@ function clearPlot(plotId){
   const ctx = plotContexts.find(c => c.plotId === plotId);
   if (!ctx) return;
 
+  // ✅ invalidate any in-flight compute for this plot
+  plotState[plotId].token++;
+  plotState[plotId].labels.clear();
+
   const gd = document.getElementById(plotId);
   if (!gd || !gd.data) return;
 
@@ -1227,6 +1720,7 @@ function clearPlot(plotId){
   if (plotUI[plotId]) {
     plotUI[plotId].computeSelect.innerHTML = `<option value="">-- plotted points --</option>`;
     plotUI[plotId].pointSelect.value = "";
+     plotUI[plotId].computeSelect.value = ""; // ✅ clear selection too
   }
 
   // clear this plot’s result panel (optional but recommended)
@@ -1241,6 +1735,18 @@ function attachClearButtons(){
     });
   });
 }
+
+function removeBatchPointTraces(batchPlotId){
+  const gd = document.getElementById(batchPlotId);
+  if (!gd?.data) return;
+
+  const idx = [];
+  gd.data.forEach((t,i) => {
+    if (t.meta?.type === "point") idx.push(i);
+  });
+  if (idx.length) Plotly.deleteTraces(batchPlotId, idx);
+}
+
 
 
 

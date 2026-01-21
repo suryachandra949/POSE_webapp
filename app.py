@@ -75,7 +75,7 @@ DATASETS = {
 
 }
 
-def plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E):
+def plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E,n):
     
     if metric == "EDS": 
         # Curves
@@ -110,23 +110,23 @@ def plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E):
         # Curves
 
         edd_runtime = np.linspace(B[0],E[0],200)
-        edd_energy = np.sqrt((code_energy)**2 + ((beta/alpha)*code_runtime)**2 - ((beta/alpha)*edd_runtime)**2)
+        edd_energy = code_energy * np.power((code_runtime/edd_runtime),n)
 
         # EDD limit curve
         edd_runtime_limit = np.linspace(A[0],C[0],200)
-        edd_energy_limit = np.sqrt((C[1])**2 + ((beta/alpha)*C[0])**2 - ((beta/alpha)*edd_runtime_limit)**2)
+        edd_energy_limit = C[1] * np.power((C[0]/edd_runtime_limit),n)
 
 
         # C_line curve
         C_line_runtime = np.linspace(C[0],code_runtime,200)
-        C_line_energy = C_line_runtime * np.sqrt( ((power_value*C_line_runtime)/code_runtime)**2 + ( (beta*C_line_runtime)/(alpha*code_runtime) )**2 - (beta/alpha)**2)
+        C_line_energy = (power_value * C_line_runtime)* np.power((C_line_runtime/code_runtime),n+1)
 
     return edd_runtime,edd_energy,edd_runtime_limit,edd_energy_limit,C_line_runtime,C_line_energy
 
 
 
 
-def compute_intersections(point, pmin, pmax, alpha, beta, metric):
+def compute_intersections(point, pmin, pmax, alpha, beta, metric,n):
 
     #Metric Calculation
 
@@ -180,24 +180,24 @@ def compute_intersections(point, pmin, pmax, alpha, beta, metric):
 
     elif metric == "EDP":
 
-      EDD_metric = math.sqrt(((alpha*energy_value)**2) + ((beta) * runtime_value)**2)
+      EDD_metric = energy_value *  (runtime_value**n)
 
-      EDD_max_runtime = math.sqrt((EDD_metric * EDD_metric) / (((alpha*pmax)**2) + ((beta)**2)))
+      EDD_max_runtime = (EDD_metric / pmax)**(1/(n+1))
       EDD_max_energy = pmax * EDD_max_runtime
 
-      EDD_min_runtime = math.sqrt((EDD_metric * EDD_metric) / (((alpha*pmin)**2) + ((beta)**2)))
+      EDD_min_runtime =  (EDD_metric / pmin)**(1/(n+1))
       EDD_min_energy = pmin * EDD_min_runtime
 
       Point_D_runtime = runtime_value
       Point_D_energy = runtime_value * pmin
  
-      Point_C_runtime = runtime_value * math.sqrt(((alpha*pmin)**2 + beta**2)/(((alpha*power_value)**2 + beta**2)))
+      Point_C_runtime = runtime_value *((pmin/power_value) ** (1/(n+1)))
       Point_C_energy = pmin * Point_C_runtime
 
       #Metric Calculations
-      EDD_metric_limit = math.sqrt((alpha*Point_C_energy)**2 + (beta * Point_C_runtime)**2)
+      EDD_metric_limit = (Point_C_energy) * (Point_C_runtime**n)
 
-      Point_A_runtime = math.sqrt((EDD_metric_limit * EDD_metric_limit) / (((alpha*pmax)**2) + (beta**2)))
+      Point_A_runtime = (EDD_metric_limit / pmax)**(1/(n+1))
       Point_A_energy = pmax * Point_A_runtime   
 
          
@@ -244,6 +244,20 @@ def compute_intersections(point, pmin, pmax, alpha, beta, metric):
 
 
 
+def load_power_sets(cfg):
+    power_sets = {}
+    for case, path in cfg["cases"].items():
+        df = pd.read_csv(path)
+        if "role" not in df.columns:
+            df["role"] = "other"
+        power_sets[case] = {
+            "slopes": df.set_index("name")["m"].to_dict(),
+            "roles": df.set_index("name")["role"].to_dict(),
+        }
+    return power_sets
+
+
+
 @app.route("/load_dataset/<name>")
 def load_dataset(name):
     if name not in DATASETS:
@@ -253,10 +267,7 @@ def load_dataset(name):
 
     points = pd.read_csv(cfg["points"]).to_dict(orient="records")
 
-    power_sets = {}
-    for case, path in cfg["cases"].items():
-        df = pd.read_csv(path)
-        power_sets[case] = df.set_index("name")["m"].to_dict()
+    power_sets = load_power_sets(cfg)
 
     return jsonify({
         "points": points,
@@ -268,10 +279,7 @@ def index():
     # load default dataset (MG) to render the page
     cfg = DATASETS["MG"]
     points = pd.read_csv(cfg["points"]).to_dict(orient="records")
-    power_sets = {}
-    for case, path in cfg["cases"].items():
-        df = pd.read_csv(path)
-        power_sets[case] = df.set_index("name")["m"].to_dict()
+    power_sets = load_power_sets(cfg)
 
     return render_template("index.html", points=points, power_sets=power_sets)
 
@@ -287,11 +295,12 @@ def compute():
     pmax = data["pmax"]
     alpha = float(data["alpha"])
     beta = float(data["beta"])
+    n = float(data.get("n")) 
     metric = data["option"]
 
 
 
-    intersections,EDD_metric,EDD_metric_limit,code_runtime,code_energy = compute_intersections(point, pmin, pmax,alpha,beta,metric)
+    intersections,EDD_metric,EDD_metric_limit,code_runtime,code_energy = compute_intersections(point, pmin, pmax,alpha,beta,metric,n)
 
     #metrics list
     B = []
@@ -328,7 +337,7 @@ def compute():
             D_line_runtime.append(pt["x"])
             D_line_energy.append(pt["y"])
 
-    edd_runtime,edd_energy,edd_runtime_limit,edd_energy_limit,C_line_runtime,C_line_energy = plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E)
+    edd_runtime,edd_energy,edd_runtime_limit,edd_energy_limit,C_line_runtime,C_line_energy = plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E,n)
 
 
     return jsonify({
