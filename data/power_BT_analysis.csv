@@ -1,3 +1,3 @@
-name,m
-pL1_scalar_fma_64_1.50GHz,90.415767
-pL3_avx2_add_128_turbo,245.366339
+name,m,role
+pL1_scalar_fma_64_1.50GHz,90.415767,pmin
+pL3_avx2_add_128_turbo,245.366339,pmax

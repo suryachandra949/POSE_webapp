@@ -659,10 +659,28 @@
 
 
     const plotState = {
-      plot1: { labels: new Set(), token: 0 },
-      plot2: { labels: new Set(), token: 0 },
-      plot3: { labels: new Set(), token: 0 }
+      plot1: { labels: new Set() },
+      plot2: { labels: new Set() },
+      plot3: { labels: new Set() }
     };
+
+    const computeToken = {
+      plot1: 0,
+      plot2: 0,
+      plot3: 0,
+      plot1_batch: 0,
+      plot2_batch: 0
+    };
+
+    const computeAbort = {
+      plot1: null,
+      plot2: null,
+      plot3: null,
+      plot1_batch: null,
+      plot2_batch: null
+    };
+
+
 
 
     // -------------------------------
@@ -672,32 +690,7 @@
 
     const plottedPoints = new Map(); // label -> point
 
-    let plotContexts = [
-      {
-        plotId: "plot1",
-        power: powerSets.case1,
-        pmin: Math.min(...Object.values(powerSets.case1)),
-        pmax: Math.max(...Object.values(powerSets.case1)),
-        resultsId: "results-content1",
-        derivedId: "derived-content1"
-      },
-      {
-        plotId: "plot2",
-        power: powerSets.case2,
-        pmin: Math.min(...Object.values(powerSets.case2)),
-        pmax: Math.max(...Object.values(powerSets.case2)),
-        resultsId: "results-content2",
-        derivedId: "derived-content2"
-      },
-      {
-        plotId: "plot3",
-        power: powerSets.case3,
-        pmin: Math.min(...Object.values(powerSets.case3)),
-        pmax: Math.max(...Object.values(powerSets.case3)),
-        resultsId: "results-content3",
-        derivedId: "derived-content3"
-      }
-    ];
+    let plotContexts = [];
 
     let selectedOption = null;  // store the currently selected circle
     
@@ -742,6 +735,64 @@
       });
     }
 
+function abortAllComputes(){
+  // invalidate any pending responses
+  Object.keys(computeToken).forEach(k => computeToken[k]++);
+
+  // abort inflight requests
+  Object.keys(computeAbort).forEach(k => {
+    computeAbort[k]?.abort?.();
+    computeAbort[k] = null;
+  });
+}
+
+function resetSelectionsAndCaches(){
+  // clears all label tracking (this is what caused your “can’t re-plot” bug)
+  Object.values(plotState).forEach(s => s.labels.clear());
+
+  addedLabels.clear();
+  plottedPoints.clear();
+}
+
+function clearAllPanels(){
+  plotContexts.forEach(ctx => {
+    document.getElementById(ctx.resultsId).innerHTML = "";
+    document.getElementById(ctx.derivedId).innerHTML = "";
+  });
+}
+
+function wireUI(){
+  attachPminPmaxHandlers();      // uses onchange 
+  attachAddPointHandlers();      // uses onchange 
+  attachComputeSelectHandlers(); // uses onchange 
+  attachClearButtons();          // uses onchange
+}
+
+function exitAllBatchModes(){
+  const t1 = document.getElementById("plot1BatchToggle");
+  const t2 = document.getElementById("plot2BatchToggle");
+
+  if (t1) t1.checked = false;
+  if (t2) t2.checked = false;
+
+  // hide batch wrappers / show normal plots if needed
+  document.getElementById("plot1BatchWrap")?.classList.add("hidden");
+  document.getElementById("plot2BatchWrap")?.classList.add("hidden");
+  document.getElementById("plot1")?.classList.remove("hidden");
+  document.getElementById("plot2")?.classList.remove("hidden");
+
+  // drop batch plotly instances
+  Plotly.purge("plot1_batch");
+  Plotly.purge("plot2_batch");
+}
+
+function resetForDatasetSwitch(){
+  abortAllComputes();
+  exitAllBatchModes();
+  resetSelectionsAndCaches();
+
+  clearAllPanels();
+}
 
 
 //    function removeIntersectionTraces() {
@@ -761,7 +812,7 @@
 //        intersectionKeys.clear();
 //    }
 //
-    function removeComputeTraces(plotId) {
+    async function removeComputeTraces(plotId) {
         const gd = document.getElementById(plotId);
         const idx = [];
     
@@ -777,9 +828,8 @@
             }
         });
       
-        if (idx.length) {
-            Plotly.deleteTraces(plotId, idx);
-        }
+        if (!idx.length) return Promise.resolve();
+        return Plotly.deleteTraces(plotId, idx); // ✅ return the real promise
     }
 
 
@@ -854,12 +904,6 @@
         }
     }
 
-function isAnyBatchOn(){
-  return !!(
-    document.getElementById("plot1BatchToggle")?.checked ||
-    document.getElementById("plot2BatchToggle")?.checked
-  );
-}
 
 function setGlobalControlsEnabled(enabled){
   const disable = !enabled;
@@ -909,8 +953,17 @@ function initBatchPlotFromSource(sourcePlotId, batchPlotId){
   return Plotly.newPlot(batchPlotId, powerTraces, layout, {responsive:true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: batchPlotId, scale: 1} });
 }
 
-function runBatchComputeFor(sourcePlotId, batchPlotId){
+async function runBatchComputeFor(sourcePlotId, batchPlotId){
   if (!selectedOption) return;
+
+  computeToken[batchPlotId]++;
+  const myToken = computeToken[batchPlotId];
+
+  // ✅ cancel any in-flight batch request
+  computeAbort[batchPlotId]?.abort();
+  computeAbort[batchPlotId] = new AbortController();
+  const signal = computeAbort[batchPlotId].signal;
+
 
   // use the source plot's current selected pmin/pmax
   const pm = getSelectedPminPmax(sourcePlotId);
@@ -928,7 +981,7 @@ function runBatchComputeFor(sourcePlotId, batchPlotId){
   if (!labels || labels.size === 0) return;
 
   // remove old compute traces from the batch plot only
-  removeComputeTraces(batchPlotId);
+  await removeComputeTraces(batchPlotId);
 
   let firstC = true;
   let firstD = true;
@@ -948,10 +1001,17 @@ function runBatchComputeFor(sourcePlotId, batchPlotId){
         beta,
         n,
         option: selectedOption
-      })
+      }),
+      signal
     })
-    .then(r => r.json())
+    .then(r => {
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+    })
     .then(data => {
+
+      if (myToken !== computeToken[batchPlotId]) return;
+
       // add to the BATCH plot (not the source plot)
       Plotly.addTraces(batchPlotId, {
         x: data.D_line.runtime,
@@ -981,17 +1041,28 @@ function runBatchComputeFor(sourcePlotId, batchPlotId){
 
       // extend power lines on batch plot
       updatePowerLines(batchPlotId, recomputeXMax(batchPlotId));
+    })
+    .catch(err => {
+      if (err.name === "AbortError") return;
+      console.error(err);
     });
   });
 }
 
 
 
-    function runComputeForPlot(plotId, label, optionValue) {
+  async function runComputeForPlot(plotId, label, optionValue) {
   if (!label || !optionValue) return;
 
-  const myToken = plotState[plotId].token;   // ✅ capture token at start
-  
+  computeToken[plotId]++;
+  const myToken = computeToken[plotId];
+
+  // ✅ cancel any in-flight request for this plot
+  computeAbort[plotId]?.abort();
+  computeAbort[plotId] = new AbortController();
+  const signal = computeAbort[plotId].signal;
+
+ 
   const pm = getSelectedPminPmax(plotId);
   if (!pm) { alert("Select PMIN and PMAX first"); return; }
 
@@ -1007,7 +1078,7 @@ function runBatchComputeFor(sourcePlotId, batchPlotId){
   const ctx = plotContexts.find(c => c.plotId === plotId);
   if (!ctx) return;
 
-  removeComputeTraces(plotId);
+  await removeComputeTraces(plotId);
 
  // ✅ plot3 special behavior: COMPUTE: ONLY points currently plotted on plot3
 if (plotId === "plot3") {
@@ -1028,12 +1099,18 @@ if (plotId === "plot3") {
         beta,
         n,
         option: optionValue
-      })
+      }),
+      signal
     })
-    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
     .then(data => {
-      // ignore stale responses
-      if (myToken !== plotState[plotId].token) return;
+
+      if (myToken !== computeToken[plotId]) return;
+
+
 
       Plotly.addTraces(plotId, {
         x: data.D_line.runtime,
@@ -1054,6 +1131,10 @@ if (plotId === "plot3") {
       });
 
       updatePowerLines(plotId, recomputeXMax(plotId));
+    })
+    .catch(err => {
+      if (err.name === "AbortError") return;
+      console.error(err);
     });
   });
 
@@ -1077,11 +1158,15 @@ if (plotId === "plot3") {
       beta,
       n,
       option: optionValue
-    })
+    }),
+    signal
   })
-  .then(r => r.json())
+  .then(r => {
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  })
   .then(data => {
-    if (myToken !== plotState[plotId].token) return;
+    if (myToken !== computeToken[plotId]) return;
     data.intersections.forEach(pt => {
       Plotly.addTraces(plotId, {
         x: [pt.x],
@@ -1135,6 +1220,10 @@ if (plotId === "plot3") {
     updatePowerLines(plotId, recomputeXMax(plotId));
     updateResultsPanel(ctx.resultsId, data.metrics);
     updateDerivedMetrics(ctx.derivedId, data.metrics.derived_metrics);
+  })
+  .catch(err => {
+    if (err.name === "AbortError") return;
+    console.error(err);
   });
 }
 
@@ -1237,12 +1326,14 @@ function attachComputeSelectHandlers() {
 // Initialize dataset
 // ========================
 function loadDataset(name){
+    resetForDatasetSwitch();
     fetch(`/load_dataset/${name}`)
       .then(res=>{
           if(!res.ok) throw new Error("HTTP "+res.status);
           return res.json();
       })
       .then(data=>{
+        
           allPoints = data.points;
           powerSets = data.power_sets;
 
@@ -1253,11 +1344,7 @@ function loadDataset(name){
           populatePminPmax("plot2");
           populatePminPmax("plot3");
 
-
-          attachPminPmaxHandlers();
-          attachAddPointHandlers();
-          attachComputeSelectHandlers();
-
+          wireUI();
       })
       .catch(err=>{
           console.error("Failed to load dataset:", name, err);
@@ -1297,21 +1384,13 @@ datasetSelect.addEventListener("change", ()=>loadDataset(datasetSelect.value));
 
 document.addEventListener("DOMContentLoaded", () => {
     resetPointDropdown(allPoints);
-    resetAllPlots();
     initPlots();
 
     populatePminPmax("plot1");
     populatePminPmax("plot2");
     populatePminPmax("plot3");
 
-    attachPminPmaxHandlers();
-    attachAddPointHandlers();
-    attachComputeSelectHandlers();
-    attachClearButtons();
-
-    // Set default alpha and beta values
-    document.getElementById("alpha").value = "0.00000004444444444";
-    document.getElementById("beta").value = "0.00006363423285";
+    wireUI();
 
     const options = document.querySelectorAll(".option");
 
@@ -1396,6 +1475,9 @@ function exitBatch(sourcePlotId){
     w1.classList.add("hidden");
     document.getElementById("plot1").classList.remove("hidden");
 
+    computeAbort.plot1_batch?.abort();
+    computeAbort.plot1_batch = null;
+
     Plotly.purge("plot1_batch");
     Plotly.Plots.resize(document.getElementById("plot1"));
   }
@@ -1403,6 +1485,10 @@ function exitBatch(sourcePlotId){
   if (sourcePlotId === "plot2"){
     w2.classList.add("hidden");
     document.getElementById("plot2").classList.remove("hidden");
+
+    computeAbort.plot2_batch?.abort();
+    computeAbort.plot2_batch = null;
+
 
     Plotly.purge("plot2_batch");
     Plotly.Plots.resize(document.getElementById("plot2"));
@@ -1699,7 +1785,10 @@ function clearPlot(plotId){
   if (!ctx) return;
 
   // ✅ invalidate any in-flight compute for this plot
-  plotState[plotId].token++;
+  computeToken[plotId]++;
+  computeAbort[plotId]?.abort();
+  computeAbort[plotId] = null;
+
   plotState[plotId].labels.clear();
 
   const gd = document.getElementById(plotId);
@@ -1730,10 +1819,8 @@ function clearPlot(plotId){
 
 function attachClearButtons(){
   document.querySelectorAll(".clear-plot-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      clearPlot(btn.dataset.plot);
+    btn.onclick = () => clearPlot(btn.dataset.plot);
     });
-  });
 }
 
 function removeBatchPointTraces(batchPlotId){
@@ -1746,10 +1833,6 @@ function removeBatchPointTraces(batchPlotId){
   });
   if (idx.length) Plotly.deleteTraces(batchPlotId, idx);
 }
-
-
-
-
 
 </script>
 

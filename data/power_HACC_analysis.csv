@@ -1,3 +1,3 @@
-name,m
-pL1_scalar_fma_64_1.50GHz,93.4828162
-pL1_avx2_fma_64_2.0GHz,242.6504249
+name,m,role
+pL1_scalar_fma_64_1.50GHz,93.4828162,pmin
+pL1_avx2_fma_64_2.0GHz,242.6504249,pmax
