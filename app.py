@@ -79,46 +79,46 @@ def plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E,n)
     
     if metric == "EDS": 
         # Curves
-        edd_runtime = np.linspace(B[0],E[0],200)
+        edd_runtime = np.linspace(B[0],E[0],2000)
         edd_energy = code_energy + ((beta/alpha)*code_runtime) - ((beta/alpha)*edd_runtime)
 
         # EDD limit curve
-        edd_runtime_limit = np.linspace(A[0],C[0],200)
+        edd_runtime_limit = np.linspace(A[0],C[0],2000)
         edd_energy_limit = C[1] + ((beta/alpha)*C[0]) - ((beta/alpha)*edd_runtime_limit)
 
 
         # C_line curve
-        C_line_runtime = np.linspace(C[0],code_runtime,200)
+        C_line_runtime = np.linspace(C[0],code_runtime,2000)
         C_line_energy = ((C_line_runtime**2)/code_runtime) *  (power_value +  beta/alpha) - (C_line_runtime * (beta/alpha))
     
     elif metric == "EDD":
         # Curves
 
-        edd_runtime = np.linspace(B[0],E[0],200)
+        edd_runtime = np.linspace(B[0],E[0],2000)
         edd_energy = np.sqrt((code_energy)**2 + ((beta/alpha)*code_runtime)**2 - ((beta/alpha)*edd_runtime)**2)
 
         # EDD limit curve
-        edd_runtime_limit = np.linspace(A[0],C[0],200)
+        edd_runtime_limit = np.linspace(A[0],C[0],2000)
         edd_energy_limit = np.sqrt((C[1])**2 + ((beta/alpha)*C[0])**2 - ((beta/alpha)*edd_runtime_limit)**2)
 
 
         # C_line curve
-        C_line_runtime = np.linspace(C[0],code_runtime,200)
+        C_line_runtime = np.linspace(C[0],code_runtime,2000)
         C_line_energy = C_line_runtime * np.sqrt( ((power_value*C_line_runtime)/code_runtime)**2 + ( (beta*C_line_runtime)/(alpha*code_runtime) )**2 - (beta/alpha)**2)
 
     elif metric == "EDP":
         # Curves
 
-        edd_runtime = np.linspace(B[0],E[0],200)
+        edd_runtime = np.linspace(B[0],E[0],2000)
         edd_energy = code_energy * np.power((code_runtime/edd_runtime),n)
 
         # EDD limit curve
-        edd_runtime_limit = np.linspace(A[0],C[0],200)
+        edd_runtime_limit = np.linspace(A[0],C[0],2000)
         edd_energy_limit = C[1] * np.power((C[0]/edd_runtime_limit),n)
 
 
         # C_line curve
-        C_line_runtime = np.linspace(C[0],code_runtime,200)
+        C_line_runtime = np.linspace(C[0],code_runtime,2000)
         C_line_energy = (power_value * C_line_runtime)* np.power((C_line_runtime/code_runtime),n+1)
 
     return edd_runtime,edd_energy,edd_runtime_limit,edd_energy_limit,C_line_runtime,C_line_energy
@@ -400,9 +400,9 @@ def compute():
         "derived_metrics": [
             {
                 "name":"Best Case Energy Saved by Reducing Power Consumption",
-                "Absolute": code_energy - E[1],
+                "Absolute": code_energy - D_line_energy[1],
                 "value_unit":"J",
-                "Relative": code_energy/E[1]
+                "Relative": code_energy/D_line_energy[1]
             },
             {
                 "name": "Worst Case Slowdown as a result of Power Optimisation",
@@ -412,7 +412,7 @@ def compute():
             },
             {
                 "name": "Best Case Improvement in EDD metric from Power Optimisation",
-                "Absolute": (EDD_metric - EDD_metric_limit)/100,
+                "Absolute": (EDD_metric - EDD_metric_limit)/(EDD_metric * 0.01),
                 "value_unit":"%",
                 "Relative": EDD_metric/EDD_metric_limit            
             },

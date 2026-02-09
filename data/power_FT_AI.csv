@@ -1,3 +1,5 @@
 name,m,role
-pDram_sse_fma_64_2.0GHz,139.45585,pmin
+pL1_scalar_mul_64_2.0GHz,103.089893,pmin
+pL1_scalar_mul_64_1.50GHz,87.594833,pmin
 pL3_avx2_add_128_turbo,245.366339,pmax
+pL1_avx2_mul_64_2.0GHz,241.44913409,pmax

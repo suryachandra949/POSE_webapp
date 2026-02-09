@@ -1,3 +1,5 @@
 name,m,role
-pL1_sse_fma_64_2.0GHz,107.9255240,pmin
+Pmin,107.9255240,pmin
+Pmin_64_1.50GHz,90.415767,pmin
 pL3_avx2_add_128_turbo,245.366339,pmax
+Pmax,237.311258,pmax

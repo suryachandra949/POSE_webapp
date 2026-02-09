@@ -62,7 +62,7 @@
       
         .plot{
           flex: 1;
-          min-height: 360px;
+          min-height: 360px;          /*520px; */      /*360px; */
           height: 45vh;
           max-height: 520px;
           min-width: 0;
@@ -352,6 +352,16 @@
 
         .hidden{ display:none; }
 
+        /* Hide plot3 completely */
+        #case3,
+        #plot3,
+        #plot3 + .results,
+        #plot3BatchWrap,
+        #plot3BatchWrap + .results {
+          display: none;
+        }
+
+
     </style>
 
 </head>
@@ -396,14 +406,14 @@
     <div class="filter-item">
       <label>α (alpha)</label>
       <input id="alpha" type="number" step="any"
-        value="0.00000004444444444" />
+        value="0.00000004166666667" />
     </div>
 
     <!-- Beta -->
     <div class="filter-item">
       <label>β (beta)</label>
       <input id="beta" type="number" step="any"
-        value="0.00006363423285" />
+        value="0.000056" />
     </div>
 
     <!-- n(EDP) -->
@@ -411,6 +421,14 @@
       <label>n (EDP)</label>
       <input id="n" type="number" step="any"
          value="3" />
+    </div>
+
+    <div class="filter-item">
+      <label>Export</label>
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="paperMode">
+        Paper mode (white + legend bottom)
+      </label>
     </div>
 
 
@@ -565,7 +583,7 @@
     </div>
 
     <!-- ===== CASE 3 ===== -->
-    <div class="block">
+    <div class="block" id="case3">
         <div class="plot-area">
           <div class="plot-card">
           <div class="plot-controls">
@@ -714,6 +732,7 @@
         const xVals = gd.data.flatMap(t => t.x || []);
         return Math.max(...xVals, 1);
     }
+
 
 
     function updatePowerLines(plotId, xMax) {
@@ -936,6 +955,67 @@ function setPlotControlsEnabled(plotId, enabled){
   });
 }
 
+function applyPaperModeToPlot(plotId, on){
+  const base = on ? {
+    paper_bgcolor: "white",
+    plot_bgcolor: "white",
+legend: {
+    orientation: "h",
+    x: 0.5,
+    xanchor: "center",
+    y: -0.35,
+    yanchor: "top",
+
+    bgcolor: "white",        // solid background for ACM
+    bordercolor: "#000",     // black border
+    borderwidth: 1,
+
+    font: {
+      size: 14,
+      color: "#000"
+    }
+  },
+    margin: { l: 60, r: 30, t: 40, b: 95 }
+  } : {
+    // back to your interactive look
+    paper_bgcolor: "#F8F6F0",
+    plot_bgcolor: "#fafafa",
+    legend: {
+      bgcolor: "rgba(255,255,255,0.9)",
+      bordercolor: "#aaa",
+      borderwidth: 1,
+      // default Plotly vertical legend placement is fine; you can omit x/y
+      orientation: "v"
+    },
+    margin: { l: 60, r: 30, t: 40, b: 50 }
+  };
+
+  // Apply only if plot exists (after Plotly.newPlot)
+  const gd = document.getElementById(plotId);
+  if (!gd || !gd.data) return;
+
+  Plotly.relayout(plotId, base).then(() => Plotly.Plots.resize(gd));
+}
+
+function attachPaperModeToggle(){
+  const cb = document.getElementById("paperMode");
+  if (!cb) return;
+
+  cb.onchange = () => {
+    const on = cb.checked;
+    ["plot1", "plot2", "plot3"].forEach(pid => applyPaperModeToPlot(pid, on));
+
+    // If you have batch plots visible, apply there too
+    if (!document.getElementById("plot1BatchWrap")?.classList.contains("hidden")) {
+      applyPaperModeToPlot("plot1_batch", on);
+    }
+    if (!document.getElementById("plot2BatchWrap")?.classList.contains("hidden")) {
+      applyPaperModeToPlot("plot2_batch", on);
+    }
+  };
+}
+
+
 
 function initBatchPlotFromSource(sourcePlotId, batchPlotId){
   const src = document.getElementById(sourcePlotId);
@@ -950,7 +1030,18 @@ function initBatchPlotFromSource(sourcePlotId, batchPlotId){
   //layout.title = layout.title || {};
   //layout.title.text = `${sourcePlotId.toUpperCase()} — Batch view`;
 
-  return Plotly.newPlot(batchPlotId, powerTraces, layout, {responsive:true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: batchPlotId, scale: 1} });
+  return Plotly.newPlot(batchPlotId, powerTraces, layout, {responsive:true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: batchPlotId, scale: 2, layout: {
+    legend: {
+      orientation: "h",
+      x: 0.5,
+      xanchor: "center",
+      y: -0.25,
+      yanchor: "top"
+    },
+    margin: { l: 60, r: 30, t: 40, b: 90 },
+    paper_bgcolor: "white",
+    plot_bgcolor: "white"
+  }} });
 }
 
 async function runBatchComputeFor(sourcePlotId, batchPlotId){
@@ -975,6 +1066,7 @@ async function runBatchComputeFor(sourcePlotId, batchPlotId){
   const n = Number(document.getElementById("n").value);
   if (!isFinite(n) || n <= 0) { alert("n must be a positive number"); return; }
 
+  const computeLabel = plotUI[sourcePlotId].computeSelect.value;
 
   // batch points = points currently plotted on that plot (like plot3 logic)
   const labels = plotState[sourcePlotId]?.labels;
@@ -984,7 +1076,66 @@ async function runBatchComputeFor(sourcePlotId, batchPlotId){
   await removeComputeTraces(batchPlotId);
 
   let firstC = true;
-  let firstD = true;
+  if (computeLabel) {
+  const p0 = plottedPoints.get(computeLabel);
+  if (p0) {
+    fetch("/compute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        point: p0,
+        pmin: pm.pmin,
+        pmax: pm.pmax,
+        alpha,
+        beta,
+        n,
+        option: selectedOption
+      }),
+      signal
+    })
+    .then(r => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(data => {
+      if (myToken !== computeToken[batchPlotId]) return;
+
+      const D = data.intersections?.find(pt => pt.label === "D");
+      if (!D) return; // no D -> don’t draw EDD
+      const xMin = D.x; // D runtime threshold
+
+      const eddX = [];
+      const eddY = [];
+
+      for (let i = 0; i < data.edd_curve.runtime.length; i++) {
+        const x = data.edd_curve.runtime[i];
+        const y = data.edd_curve.energy[i];
+        if (x >= xMin) {          // ✅ keep only from D runtime
+          eddX.push(x);
+          eddY.push(y);
+        }
+      }
+
+      Plotly.addTraces(batchPlotId, {
+        x: eddX,
+        y: eddY,
+        mode: "lines",
+        name: "Optimisation Bound",
+        showlegend: true,
+        hovertemplate: `EDD-curve<br>Point: ${computeLabel}<extra></extra>`,
+        line: { color: "orange", width: 1 },
+        meta: { type: "edd" }
+      });
+
+      updatePowerLines(batchPlotId, recomputeXMax(batchPlotId));
+    })
+    .catch(err => {
+      if (err.name === "AbortError") return;
+      console.error(err);
+    });
+  }
+}
+
 
   labels.forEach(lbl => {
     const p = plottedPoints.get(lbl);
@@ -1013,31 +1164,34 @@ async function runBatchComputeFor(sourcePlotId, batchPlotId){
       if (myToken !== computeToken[batchPlotId]) return;
 
       // add to the BATCH plot (not the source plot)
-      Plotly.addTraces(batchPlotId, {
-        x: data.D_line.runtime,
-        y: data.D_line.energy,
-        mode: "lines",
-        name: "D-line" ,
-        legendgroup: "D_LINE",
-        showlegend: firstD,
-        hovertemplate: `D-line<br>Point: ${lbl}<extra></extra>`,
-        line: { color: "black", width: 1, dash: "dot" },
-        meta: { type: "D_line" }
-      });
-      firstD = false;
-
+      const isComputed = (lbl === computeLabel);
       Plotly.addTraces(batchPlotId, {
         x: data.C_line.runtime,
         y: data.C_line.energy,
         mode: "lines",
-        name: "C-line",
+        name: "Contribution Bound",
         legendgroup: "C_LINE",
         showlegend: firstC,
         hovertemplate: `C-line<br>Point: ${lbl}<extra></extra>`,
-        line: { color: "#2B83BA", width: 1 },
+        line: { color: "#2B83BA", width: 1, 
+            dash: isComputed ? "solid" : "dash" },
         meta: { type: "C_line" }
       });
       firstC =false;
+
+//      if (isComputed) {
+//        Plotly.addTraces(batchPlotId, {
+//          x: [p.runtime],
+//          y: [p.energy],
+//          mode: "markers",
+//          name: `baseline (${lbl})`,   // legend text
+//          marker: {
+//            size: 6,
+//          },
+//          showlegend: true,            // ✅ ONLY legend entry
+//          meta: { type: "point" }
+//        });
+//      }
 
       // extend power lines on batch plot
       updatePowerLines(batchPlotId, recomputeXMax(batchPlotId));
@@ -1171,6 +1325,7 @@ if (plotId === "plot3") {
       Plotly.addTraces(plotId, {
         x: [pt.x],
         y: [pt.y],
+        //mode: "text",
         mode: "markers+text",
         marker: { size: 6, symbol: "circle", color: "black" },
         text: [pt.label],
@@ -1185,7 +1340,7 @@ if (plotId === "plot3") {
       x: data.edd_curve_limit.runtime,
       y: data.edd_curve_limit.energy,
       mode: "lines",
-      name: "EDD limit constraint",
+      name: "Optimisation Limit",
       line: { color: "orange", width: 1, dash: "dash" },
       meta: { type: "edd_limit" }
     });
@@ -1194,7 +1349,7 @@ if (plotId === "plot3") {
       x: data.edd_curve.runtime,
       y: data.edd_curve.energy,
       mode: "lines",
-      name: "EDD optimisation constraint",
+      name: "Optimisation Bound",
       line: { color: "orange", width: 1 },
       meta: { type: "edd" }
     });
@@ -1203,7 +1358,7 @@ if (plotId === "plot3") {
       x: data.D_line.runtime,
       y: data.D_line.energy,
       mode: "lines",
-      name: "max energy save",
+      name: "Pure Power Optimisation",
       line: { color: "black", width: 1, dash: "dot" },
       meta: { type: "D_line" }
     });
@@ -1240,6 +1395,7 @@ function addBatchPoints(sourcePlotId, batchPlotId){
       y: [p.energy],
       mode: "markers",
       name: lbl,                // point label
+      showlegend: true,
       marker: { size: 6 },
       meta: { type: "point", label: lbl }
     });
@@ -1391,7 +1547,7 @@ document.addEventListener("DOMContentLoaded", () => {
     populatePminPmax("plot3");
 
     wireUI();
-
+    attachPaperModeToggle();
     const options = document.querySelectorAll(".option");
 
     options.forEach(opt => {
@@ -1595,7 +1751,18 @@ function initPlots(){
         paper_bgcolor: "#F8F6F0",
         plot_bgcolor: "#fafafa",
         xaxis: {
-          title: "Runtime",
+          title: {
+              text: "Runtime (s)",
+              font: {
+              color: "#000",   // ✅ pure black
+              size: 14,
+              family: "Arial, sans-serif"
+              }
+          },
+          tickfont: {
+              color: "#000",     // ✅ tick labels black
+              size: 12
+              },
           showgrid: true,
           gridcolor: "#ddd",
           zeroline: false,
@@ -1605,7 +1772,18 @@ function initPlots(){
           mirror: true
         },
         yaxis: {
-          title: "Energy",
+          title: {
+              text: "Energy (J)",
+              font: {
+              color: "#000",   // ✅ pure black
+              size: 14,
+              family: "Arial, sans-serif"
+              }
+          },
+          tickfont: {
+              color: "#000",     // ✅ tick labels black
+              size: 12
+              },
           showgrid: true,
           gridcolor: "#ddd",
           zeroline: false,
@@ -1626,7 +1804,19 @@ function initPlots(){
         toImageButtonOptions: {
         format: "svg",          // ✅ SVG export
         filename: ctx.plotId,   // plot1 / plot2 / plot3
-        scale: 1
+        scale: 2,
+        layout: {
+    legend: {
+      orientation: "h",
+      x: 0.5,
+      xanchor: "center",
+      y: -0.35,
+      yanchor: "top"
+    },
+    margin: { l: 60, r: 30, t: 40, b: 90 },
+    paper_bgcolor: "white",
+    plot_bgcolor: "white"
+  }
        }
       }
     );
@@ -1708,8 +1898,12 @@ function attachAddPointHandlers() {
         name: p.label,
         legendgroup: "points",
         showlegend: true,
-        marker: { size: 6 }
+        marker: {
+          size: 6,
+        },
+        meta: { type: "point", label: p.label }
       });
+
 
       plotState[plotId].labels.add(p.label);
 
@@ -1749,9 +1943,9 @@ function resetAllPlots() {
       alert(`${id} must be a positive number`);
       // ✅ reset correct default per parameter
       if (id === "alpha") {
-        input.value = "0.00000004444444444";
+        input.value = "0.00000004166666667";
       } else if (id === "beta") {
-        input.value = "0.00006363423285";
+        input.value = "0.000056";
       } else if (id === "n") {
         input.value = "3";               // ✅ default n
       }
@@ -1833,6 +2027,8 @@ function removeBatchPointTraces(batchPlotId){
   });
   if (idx.length) Plotly.deleteTraces(batchPlotId, idx);
 }
+
+
 
 </script>
 
