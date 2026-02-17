@@ -416,6 +416,12 @@
         value="0.000056" />
     </div>
 
+    <!-- m (EDP) -->
+    <div class="filter-item">
+      <label>m (EDP)</label>
+      <input id="m" type="number" step="any" value="1" />
+    </div>
+
     <!-- n(EDP) -->
     <div class="filter-item">
       <label>n (EDP)</label>
@@ -423,14 +429,14 @@
          value="3" />
     </div>
 
-    <div class="filter-item">
+<!--    <div class="filter-item"> 
       <label>Export</label>
       <label style="display:flex;align-items:center;gap:8px;">
         <input type="checkbox" id="paperMode">
         Paper mode (white + legend bottom)
       </label>
     </div>
-
+  -->
 
 
     </div>
@@ -1066,6 +1072,9 @@ async function runBatchComputeFor(sourcePlotId, batchPlotId){
   const n = Number(document.getElementById("n").value);
   if (!isFinite(n) || n <= 0) { alert("n must be a positive number"); return; }
 
+  const m = Number(document.getElementById("m").value);
+  if (!isFinite(m) || m <= 0) { alert("m must be a positive number"); return; }
+
   const computeLabel = plotUI[sourcePlotId].computeSelect.value;
 
   // batch points = points currently plotted on that plot (like plot3 logic)
@@ -1089,6 +1098,7 @@ async function runBatchComputeFor(sourcePlotId, batchPlotId){
         alpha,
         beta,
         n,
+        m,
         option: selectedOption
       }),
       signal
@@ -1151,6 +1161,7 @@ async function runBatchComputeFor(sourcePlotId, batchPlotId){
         alpha,
         beta,
         n,
+        m,
         option: selectedOption
       }),
       signal
@@ -1229,6 +1240,10 @@ async function runBatchComputeFor(sourcePlotId, batchPlotId){
   const n = Number(document.getElementById("n").value);
   if (!isFinite(n) || n <= 0) { alert("n must be a positive number"); return; }
 
+  const m = Number(document.getElementById("m").value);
+  if (!isFinite(m) || m <= 0) { alert("m must be a positive number"); return; }
+
+
   const ctx = plotContexts.find(c => c.plotId === plotId);
   if (!ctx) return;
 
@@ -1252,6 +1267,7 @@ if (plotId === "plot3") {
         alpha,
         beta,
         n,
+        m,
         option: optionValue
       }),
       signal
@@ -1311,6 +1327,7 @@ if (plotId === "plot3") {
       alpha,
       beta,
       n,
+      m,
       option: optionValue
     }),
     signal
@@ -1933,7 +1950,7 @@ function resetAllPlots() {
 
 
 // Add change listeners to alpha and beta inputs
-["alpha", "beta","n"].forEach(id => {
+["alpha", "beta","n", "m"].forEach(id => {
   const input = document.getElementById(id);
   
   input.addEventListener("change", () => {
@@ -1948,6 +1965,8 @@ function resetAllPlots() {
         input.value = "0.000056";
       } else if (id === "n") {
         input.value = "3";               // ✅ default n
+      } else if (id === "m") {
+        input.value = "1";
       }
 
       return;

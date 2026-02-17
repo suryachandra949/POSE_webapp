@@ -1,5 +1,5 @@
 name,m,role
-pmin_64_2.0GHz,94.39056,pmin
+pmin,94.39056,pmin
 pmin_64_1.50GHz,82.56135,pmin
-pmax_64_2.0GHz,242.7848,pmax
+pmax,242.7848,pmax
 pmax_64_turbo,245.410,pmax

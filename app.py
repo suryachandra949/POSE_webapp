@@ -75,7 +75,7 @@ DATASETS = {
 
 }
 
-def plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E,n):
+def plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E,n,m):
     
     if metric == "EDS": 
         # Curves
@@ -110,23 +110,23 @@ def plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E,n)
         # Curves
 
         edd_runtime = np.linspace(B[0],E[0],2000)
-        edd_energy = code_energy * np.power((code_runtime/edd_runtime),n)
+        edd_energy = code_energy * np.power((code_runtime/edd_runtime),n/m)
 
         # EDD limit curve
         edd_runtime_limit = np.linspace(A[0],C[0],2000)
-        edd_energy_limit = C[1] * np.power((C[0]/edd_runtime_limit),n)
+        edd_energy_limit = C[1] * np.power((C[0]/edd_runtime_limit),n/m)
 
 
         # C_line curve
         C_line_runtime = np.linspace(C[0],code_runtime,2000)
-        C_line_energy = (power_value * C_line_runtime)* np.power((C_line_runtime/code_runtime),n+1)
+        C_line_energy = (power_value)* np.power((C_line_runtime),(2*m+n)/m) / (code_runtime)**((m+n)/m)
 
     return edd_runtime,edd_energy,edd_runtime_limit,edd_energy_limit,C_line_runtime,C_line_energy
 
 
 
 
-def compute_intersections(point, pmin, pmax, alpha, beta, metric,n):
+def compute_intersections(point, pmin, pmax, alpha, beta, metric,n,m):
 
     #Metric Calculation
 
@@ -180,24 +180,24 @@ def compute_intersections(point, pmin, pmax, alpha, beta, metric,n):
 
     elif metric == "EDP":
 
-      EDD_metric = energy_value *  (runtime_value**n)
+      EDD_metric = (energy_value**m) *  (runtime_value**n)
 
-      EDD_max_runtime = (EDD_metric / pmax)**(1/(n+1))
+      EDD_max_runtime = (EDD_metric / pmax**m)**(1/(n+m))
       EDD_max_energy = pmax * EDD_max_runtime
 
-      EDD_min_runtime =  (EDD_metric / pmin)**(1/(n+1))
+      EDD_min_runtime =  (EDD_metric / pmin**m)**(1/(n+m))
       EDD_min_energy = pmin * EDD_min_runtime
 
       Point_D_runtime = runtime_value
       Point_D_energy = runtime_value * pmin
  
-      Point_C_runtime = runtime_value *((pmin/power_value) ** (1/(n+1)))
+      Point_C_runtime = runtime_value *((pmin/power_value) ** (m/(m+n)))
       Point_C_energy = pmin * Point_C_runtime
 
       #Metric Calculations
-      EDD_metric_limit = (Point_C_energy) * (Point_C_runtime**n)
+      EDD_metric_limit = (Point_C_energy**m) * (Point_C_runtime**n)
 
-      Point_A_runtime = (EDD_metric_limit / pmax)**(1/(n+1))
+      Point_A_runtime = (EDD_metric_limit / pmax**m)**(1/(n+m))
       Point_A_energy = pmax * Point_A_runtime   
 
          
@@ -296,11 +296,12 @@ def compute():
     alpha = float(data["alpha"])
     beta = float(data["beta"])
     n = float(data.get("n")) 
+    m = float(data.get("m")) 
     metric = data["option"]
 
 
 
-    intersections,EDD_metric,EDD_metric_limit,code_runtime,code_energy = compute_intersections(point, pmin, pmax,alpha,beta,metric,n)
+    intersections,EDD_metric,EDD_metric_limit,code_runtime,code_energy = compute_intersections(point, pmin, pmax,alpha,beta,metric,n,m)
 
     #metrics list
     B = []
@@ -337,7 +338,7 @@ def compute():
             D_line_runtime.append(pt["x"])
             D_line_energy.append(pt["y"])
 
-    edd_runtime,edd_energy,edd_runtime_limit,edd_energy_limit,C_line_runtime,C_line_energy = plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E,n)
+    edd_runtime,edd_energy,edd_runtime_limit,edd_energy_limit,C_line_runtime,C_line_energy = plotCurves(metric,code_energy,code_runtime,power_value,alpha,beta,A,B,C,E,n,m)
 
 
     return jsonify({
