@@ -16,6 +16,6 @@ To cite the CA-POSE model, please use:
     address = {New York, NY, USA},
     doi = {10.1145/3797905.3807859}, 
     location = {Belfast, United Kingdom}, 
-    series = {ICS'25} 
+    series = {ICS'26} 
 }
 ```
