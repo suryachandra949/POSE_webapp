@@ -71,7 +71,39 @@ DATASETS = {
             "case2": "data/power_HACC_AI.csv",
             "case3": "data/power_HACC_analysis.csv",
         }
-    }
+    },
+    "EP_A40": {
+            "points": "data/points_EP_A40.csv",
+            "cases": {
+                "case1": "data/power_A40.csv",
+                "case2": "data/power_A40.csv",
+                "case3": "data/power_A40.csv",
+            }
+        },
+    "SP_A40": {
+            "points": "data/points_SP_A40.csv",
+            "cases": {
+                "case1": "data/power_A40.csv",
+                "case2": "data/power_A40.csv",
+                "case3": "data/power_A40.csv",
+            }
+        }, 
+    "CG_A40": {
+            "points": "data/points_CG_A40.csv",
+            "cases": {
+                "case1": "data/power_A40.csv",
+                "case2": "data/power_A40.csv",
+                "case3": "data/power_A40.csv",
+            }
+        },
+    "LU_A40": {
+            "points": "data/points_LU_A40.csv",
+            "cases": {
+                "case1": "data/power_A40.csv",
+                "case2": "data/power_A40.csv",
+                "case3": "data/power_A40.csv",
+            }
+        }
 
 }
 

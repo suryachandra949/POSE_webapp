@@ -1,0 +1,4 @@
+name,m,role
+Pmin_memhigh,56.9,pmin
+Pmin_memlow,30.9,pmin
+Pmax,300,pmax
